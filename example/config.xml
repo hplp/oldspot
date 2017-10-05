@@ -1,0 +1,10 @@
+<?xml version="1.0" ?>
+
+<group name="system" failures="0">
+    <unit type="unit" name="one">
+        <default vdd="1" />
+        <default temperature="300" />
+        <default frequency="2000" />
+        <default peak_power="0.1" />
+    </unit>
+</group>

@@ -39,14 +39,12 @@ double NBTI::timeToFailure(double vdd, double temperature, double duty_cycle, do
 
     // Create a linear approximation of dVth(t)
     double dVth_fail = (vdd - Vt0) - (vdd - Vt0)/pow(1 + fail, 1/alpha); // [ExtraTime]
-    cout << "Fail at " << dVth_fail << endl;
     double dVth = 0, dVth_prev = 0;
     double t = 0;
     for (; dVth < dVth_fail; t += dt)
     {
         dVth_prev = dVth;
         dVth = degradation(t, vdd, dVth, temperature, duty_cycle);
-        cout << t << '\t' << dVth << endl;
     }
     t -= dt;
 

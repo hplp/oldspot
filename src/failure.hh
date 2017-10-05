@@ -30,10 +30,10 @@ class NBTI : public FailureMechanism
     const double Cox = 5.934e-6;        // F
     const double alpha = 1.3;           // alpha power law [2]
 
-    // Low-level parameters (chosen from device D4 [3])
+    // Low-level parameters (chosen from [3])
     const double A = 9e11;
     const double B = 8.5e11;
-    const double C = 1e16;
+    const double C = 3e16;
     const double Gamma_IT = 2.2;
     const double Gamma_HT = 2.2;
     const double Gamma_OT = 9;
@@ -47,9 +47,9 @@ class NBTI : public FailureMechanism
 
     // High-level parameters
     const double beta = 2;              // Weibull shape parameter [4]
-    const double fail_default = 0.01;   // Relative delay change [5]
+    const double fail_default = 0.03;   // Relative delay change [5]
 
-    const double dt = 3600;             // seconds
+    const double dt = 3600*24;          // days
 
   public:
     NBTI() : FailureMechanism("NBTI") {}

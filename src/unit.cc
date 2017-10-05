@@ -77,8 +77,8 @@ void Unit::computeReliability(const vector<shared_ptr<FailureMechanism>>& mechan
         cout << '\t' << point.duration << ": " << point.activity << '\t' << point.vdd << '\t' << point.temperature << '\t' << point.frequency << '\t' << point.power << endl;
     cout << "\tMTTF:" << endl;
     for (const auto& mechanism: mechanisms)
-        cout << "\t\t" << mechanism->name << ": " << mttf(mechanism)/(3600*365) << endl;
-    cout << "\t\tOverall: " << mttf()/(3600*365) << endl;
+        cout << "\t\t" << mechanism->name << ": " << mttf(mechanism)/(3600*24*365) << endl;
+    cout << "\t\tOverall: " << mttf()/(3600*24*365) << endl;
     cout << endl;
 }
 

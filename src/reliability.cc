@@ -31,6 +31,11 @@ double WeibullDistribution::reliability(double t) const
     return exp(-pow(t/alpha, beta));
 }
 
+double WeibullDistribution::inverse(double r) const
+{
+    return alpha*pow(-log(r), 1/beta);
+}
+
 double WeibullDistribution::mttf() const
 {
     return alpha*tgamma(1/beta + 1);

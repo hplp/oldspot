@@ -14,8 +14,7 @@ class FailureMechanism
     const std::string name;
 
     FailureMechanism(const std::string& _n) : name(_n) {}
-    virtual double timeToFailure(double vdd, double temperature,  double duty_cycle, double frequency, double fail) const = 0;
-    double timeToFailure(const DataPoint& data, double fail=std::numeric_limits<double>::signaling_NaN()) const;
+    virtual double timeToFailure(const DataPoint& data, double fail=std::numeric_limits<double>::signaling_NaN()) const = 0;
     virtual std::shared_ptr<ReliabilityDistribution> distribution(const std::vector<MTTFSegment>&) const = 0;
 };
 
@@ -55,7 +54,7 @@ class NBTI : public FailureMechanism
     NBTI() : FailureMechanism("NBTI") {}
     static const std::shared_ptr<FailureMechanism> model() { static NBTI nbti; return std::make_shared<NBTI>(nbti); }
     double degradation(double t, double vdd, double dVth, double temperature, double duty_cycle) const;
-    double timeToFailure(double vdd, double temperature, double duty_cycle, double frequency, double fail=std::numeric_limits<double>::signaling_NaN()) const override;
+    double timeToFailure(const DataPoint& data, double fail=std::numeric_limits<double>::signaling_NaN()) const override;
     std::shared_ptr<ReliabilityDistribution> distribution(const std::vector<MTTFSegment>& mttfs) const override;
 };
 

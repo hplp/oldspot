@@ -6,5 +6,6 @@
         <default temperature="300" />
         <default frequency="2000" />
         <default peak_power="0.1" />
+        <trace file="example/one.trace" />
     </unit>
 </group>

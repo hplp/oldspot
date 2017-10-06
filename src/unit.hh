@@ -5,6 +5,7 @@
 #include <memory>
 #include <ostream>
 #include <pugixml.hpp>
+#include <string>
 #include <vector>
 
 #include "failure.hh"
@@ -28,19 +29,23 @@ class Component
 class Unit : public Component
 {
   protected:
-    DataPoint defaults; // default values if they are missing from traces
     double peak_power;  // W
     bool fail;
 
-    std::map<std::shared_ptr<FailureMechanism>, std::shared_ptr<ReliabilityDistribution>> reliabilities;
+    std::vector<std::vector<DataPoint>> traces;
+    std::vector<std::map<std::shared_ptr<FailureMechanism>, std::shared_ptr<ReliabilityDistribution>>> reliabilities;
 
   public:
+    static char delim;
+
     Unit(const pugi::xml_node& node);
     virtual double activity(const DataPoint& data) const;
-    void computeReliability(const std::vector<std::shared_ptr<FailureMechanism>>& mechanisms, std::vector<DataPoint>& trace);
-    virtual double reliability(double t) const;
-    virtual double mttf() const;
-    virtual double mttf(const std::shared_ptr<FailureMechanism>& mechanism) const;
+    void computeReliability(const std::vector<std::shared_ptr<FailureMechanism>>& mechanisms);
+    virtual double reliability(double t, int i) const;
+    double mttf() const override;
+    virtual double mttf(int i) const;
+    double mttf(const std::shared_ptr<FailureMechanism>& mechanism) const override;
+    virtual double mttf(const std::shared_ptr<FailureMechanism>& mechanism, int i) const;
     bool failed() const override { return fail; }
     virtual std::ostream& dump(std::ostream& stream) const override;
 };

@@ -6,13 +6,9 @@
 #include <vector>
 
 #include "reliability.hh"
+#include "trace.hh"
 
 using namespace std;
-
-double FailureMechanism::timeToFailure(const DataPoint& data, double fail) const
-{
-    return timeToFailure(data.vdd, data.temperature, data.activity, data.frequency, fail);
-}
 
 double NBTI::degradation(double t, double vdd, double dVth, double temperature, double duty_cycle) const
 {
@@ -32,19 +28,19 @@ double NBTI::degradation(double t, double vdd, double dVth, double temperature, 
     return duty_cycle*q/Cox*(dN_IT + dN_HT + dN_OT);
 }
 
-double NBTI::timeToFailure(double vdd, double temperature, double duty_cycle, double frequency, double fail) const
+double NBTI::timeToFailure(const DataPoint& data, double fail) const
 {
     if (isnan(fail))
         fail = fail_default;
 
     // Create a linear approximation of dVth(t)
-    double dVth_fail = (vdd - Vt0) - (vdd - Vt0)/pow(1 + fail, 1/alpha); // [ExtraTime]
+    double dVth_fail = (data.data.at("vdd") - Vt0) - (data.data.at("vdd") - Vt0)/pow(1 + fail, 1/alpha); // [ExtraTime]
     double dVth = 0, dVth_prev = 0;
     double t = 0;
     for (; dVth < dVth_fail; t += dt)
     {
         dVth_prev = dVth;
-        dVth = degradation(t, vdd, dVth, temperature, duty_cycle);
+        dVth = degradation(t, data.data.at("vdd"), dVth, data.data.at("temperature"), data.data.at("activity"));
     }
     t -= dt;
 

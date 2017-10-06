@@ -23,20 +23,42 @@ ostream& operator<<(ostream& stream, const Component& c)
     return c.dump(stream);
 }
 
+char Unit::delim = ',';
+
 Unit::Unit(const xml_node& node)
-    : Component(node.attribute("name").value()), defaults({0, 0, 1, 350, 1e9, 0}), peak_power(0)
+    : Component(node.attribute("name").value()), peak_power(0)
 {
+    map<string, double> defaults = {{"vdd", 1}, {"temperature", 350}, {"frequency", 1000}};
     for (const xml_node& def: node.children("default"))
     {
         if (def.attribute("vdd"))
-            defaults.vdd = def.attribute("vdd").as_double();
+            defaults["vdd"] = def.attribute("vdd").as_double();
         if (def.attribute("temperature"))
-            defaults.temperature = def.attribute("temperature").as_double();
+            defaults["temperature"] = def.attribute("temperature").as_double();
         if (def.attribute("frequency"))
-            defaults.frequency = def.attribute("frequency").as_double();
+            defaults["frequency"] = def.attribute("frequency").as_double();
         if (def.attribute("peak_power"))
             peak_power = def.attribute("peak_power").as_double();
     }
+
+    if (node.child("trace"))
+    {
+        for (const xml_node& child: node.children("trace"))
+        {
+            traces.push_back(parseTrace(child.attribute("file").value(), delim));
+            for (const auto& def: defaults)
+                for (DataPoint& data: traces.back())
+                    if (data.data.count(def.first) == 0)
+                        data.data[def.first] = def.second;
+        }
+    }
+    else
+        traces.push_back({{1, defaults}});
+    for (vector<DataPoint>& trace: traces)
+        for (DataPoint& data: trace)
+            data.data["frequency"] *= 1e6; // Expecting MHz; convert to Hz
+
+    reliabilities.resize(traces.size());
 }
 
 double Unit::activity(const DataPoint& data) const
@@ -44,71 +66,71 @@ double Unit::activity(const DataPoint& data) const
     // (cycles where unit is active)/(cycles of time step)
     // (runtime power)/(peak power)
     // For NBTI in an SRAM, this is data-dependent rather than usage-dependent
-    return data.activity;
+    return data.data.at("activity");
 }
 
-void Unit::computeReliability(const vector<shared_ptr<FailureMechanism>>& mechanisms, vector<DataPoint>& trace)
+void Unit::computeReliability(const vector<shared_ptr<FailureMechanism>>& mechanisms)
 {
-    for (size_t j = 0; j < DataPoint::size(); j++)
-    {
-        for (size_t i = 1; i < trace.size(); i++)
-            if (isnan(trace[i][j]))
-                trace[i][j] = trace[i - 1][j];
-        if (isnan(trace.back()[j]))
-            trace.back()[j] = defaults[j];
-        for (int i = trace.size() - 2; i >= 0; i--)
-            if (isnan(trace[i][j]))
-                trace[i][j] = trace[i + 1][j];
-    }
-
     for (const shared_ptr<FailureMechanism> mechanism: mechanisms)
     {
-        vector<MTTFSegment> mttfs(trace.size());
-        for (size_t i = 0; i < trace.size(); i++)
+        for (size_t i = 0; i < traces.size(); i++)
         {
-            trace[i].activity = activity(trace[i]);
-            mttfs[i] = {trace[i].duration, mechanism->timeToFailure(trace[i])};
+            vector<MTTFSegment> mttfs(traces[i].size());
+            for (size_t j = 0; j < traces[i].size(); j++)
+            {
+                traces[i][j].data["activity"] = activity(traces[i][j]);
+                double dt = j > 0 ? traces[i][j].time - traces[i][j - 1].time : traces[i][j].time;
+                mttfs[j] = {dt, mechanism->timeToFailure(traces[i][j])};
+            }
+            reliabilities[i][mechanism] = mechanism->distribution(mttfs);
         }
-        reliabilities[mechanism] = mechanism->distribution(mttfs);
     }
 
-    cout << name << endl;
-    for (const DataPoint& point: trace)
-        cout << '\t' << point.duration << ": " << point.activity << '\t' << point.vdd << '\t' << point.temperature << '\t' << point.frequency << '\t' << point.power << endl;
-    cout << "\tMTTF:" << endl;
-    for (const auto& mechanism: mechanisms)
-        cout << "\t\t" << mechanism->name << ": " << mttf(mechanism)/(3600*24*365) << endl;
-    cout << "\t\tOverall: " << mttf()/(3600*24*365) << endl;
-    cout << endl;
+    cout << name << ": " << traces.size() << " trace(s)" << endl;
+    for (size_t i = 0; i < traces.size(); i++)
+    {
+        cout << "\tTrace " << i << endl;
+        for (const auto& mechanism: mechanisms)
+            cout << "\t\t" << mechanism->name << ": " << mttf(mechanism, i)/(3600*24*365) << endl;
+        cout << "\t\tOverall: " << mttf(i)/(3600*24*365) << endl;
+        cout << endl;
+    }
 }
 
-double Unit::reliability(double t) const
+double Unit::reliability(double t, int i) const
 {
     double reliability = 1;
-    for (const auto& r: reliabilities)
+    for (const auto& r: reliabilities[i])
         reliability *= r.second->reliability(t);
     return reliability;
 }
 
 double Unit::mttf() const
 {
+    return mttf(0);
+}
+
+double Unit::mttf(int i) const
+{
     double t = numeric_limits<double>::max();
-    for (const auto& r: reliabilities)
+    for (const auto& r: reliabilities[i])
         t = min(t, r.second->mttf());
     return t;
 }
 
 double Unit::mttf(const shared_ptr<FailureMechanism>& mechanism) const
 {
-    return reliabilities.at(mechanism)->mttf();
+    return mttf(0);
+}
+
+double Unit::mttf(const shared_ptr<FailureMechanism>& mechanism, int i) const
+{
+    return reliabilities[i].at(mechanism)->mttf();
 }
 
 ostream& Unit::dump(ostream& stream) const
 {
-    return stream << name << "(vdd=" << defaults.vdd
-                          << ",T=" << defaults.temperature
-                          << ",f=" << defaults.frequency
-                          << ",P=" << peak_power << ')';
+    return stream << name;
 }
 
 Group::Group(const xml_node& node, vector<shared_ptr<Unit>>& units)

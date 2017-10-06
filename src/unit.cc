@@ -142,6 +142,11 @@ double Group::mttf(const shared_ptr<FailureMechanism>& mechanism) const
     return 0;
 }
 
+bool Group::failed() const
+{
+    return count_if(_children.begin(), _children.end(), [](const shared_ptr<Component>& c){ return c->failed(); }) > failures;
+}
+
 ostream& Group::dump(ostream& stream) const
 {
     return stream << name << '(' << _children.size() << " children,failures=" << failures << ')';

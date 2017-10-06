@@ -20,7 +20,7 @@ class Component
     virtual double mttf() const = 0;
     virtual double mttf(const std::shared_ptr<FailureMechanism>& mechanism) const = 0;
     virtual std::ostream& dump(std::ostream& stream) const = 0;
-    // test for failure
+    virtual bool failed() const = 0;
 
     friend std::ostream& operator<<(std::ostream& stream, const Component& c);
 };
@@ -30,6 +30,7 @@ class Unit : public Component
   protected:
     DataPoint defaults; // default values if they are missing from traces
     double peak_power;  // W
+    bool fail;
 
     std::map<std::shared_ptr<FailureMechanism>, std::shared_ptr<ReliabilityDistribution>> reliabilities;
 
@@ -40,6 +41,7 @@ class Unit : public Component
     virtual double reliability(double t) const;
     virtual double mttf() const;
     virtual double mttf(const std::shared_ptr<FailureMechanism>& mechanism) const;
+    bool failed() const override { return fail; }
     virtual std::ostream& dump(std::ostream& stream) const override;
 };
 
@@ -54,5 +56,6 @@ class Group : public Component
     const std::vector<std::shared_ptr<Component>>& children() const { return _children; }
     double mttf() const override;
     double mttf(const std::shared_ptr<FailureMechanism>& mechanism) const override;
+    bool failed() const;
     std::ostream& dump(std::ostream& ostream) const override;
 };

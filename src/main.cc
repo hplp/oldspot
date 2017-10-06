@@ -63,7 +63,6 @@ int main(int argc, char* argv[])
         vector<shared_ptr<FailureMechanism>> mechanisms = {NBTI::model()};
         for (const shared_ptr<Unit>& unit: units)
             unit->computeReliability(mechanisms, traces[unit->name]);
-        // Compute reliabilities
         // Monte Carlo sim to get overall failure distribution
     }
     catch (ArgException& e)

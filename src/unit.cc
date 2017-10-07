@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "failure.hh"
+#include "interp.hh"
 #include "reliability.hh"
 #include "trace.hh"
 
@@ -59,6 +60,7 @@ Unit::Unit(const xml_node& node)
             data.data["frequency"] *= 1e6; // Expecting MHz; convert to Hz
 
     reliabilities.resize(traces.size());
+    inverse_reliabilities.resize(traces.size());
 }
 
 double Unit::activity(const DataPoint& data) const
@@ -71,9 +73,9 @@ double Unit::activity(const DataPoint& data) const
 
 void Unit::computeReliability(const vector<shared_ptr<FailureMechanism>>& mechanisms)
 {
-    for (const shared_ptr<FailureMechanism> mechanism: mechanisms)
+    for (size_t i = 0; i < traces.size(); i++)
     {
-        for (size_t i = 0; i < traces.size(); i++)
+        for (const shared_ptr<FailureMechanism> mechanism: mechanisms)
         {
             vector<MTTFSegment> mttfs(traces[i].size());
             for (size_t j = 0; j < traces[i].size(); j++)
@@ -84,6 +86,18 @@ void Unit::computeReliability(const vector<shared_ptr<FailureMechanism>>& mechan
             }
             reliabilities[i][mechanism] = mechanism->distribution(mttfs);
         }
+
+        const double dt = 3600*24;
+        inverse_reliabilities[i].resize(lut_size);
+        inverse_reliabilities[i][0] = numeric_limits<double>::infinity();
+        inverse_reliabilities[i].back() = 1;
+        double t = 0;
+        for (int j = lut_size - 2; j > 0; j--)
+        {
+            double r = (double)j/(double)(lut_size - 1);
+            for (; reliability(i, t) > r; t += dt);
+            inverse_reliabilities[i][j] = linterp(r, {reliability(i, t - dt), t - dt}, {reliability(i, t), t});
+        }
     }
 
     cout << name << ": " << traces.size() << " trace(s)" << endl;
@@ -91,18 +105,26 @@ void Unit::computeReliability(const vector<shared_ptr<FailureMechanism>>& mechan
     {
         cout << "\tTrace " << i << endl;
         for (const auto& mechanism: mechanisms)
-            cout << "\t\t" << mechanism->name << ": " << mttf(mechanism, i)/(3600*24*365) << endl;
+            cout << "\t\t" << mechanism->name << ": " << mttf(i, mechanism)/(3600*24*365) << endl;
         cout << "\t\tOverall: " << mttf(i)/(3600*24*365) << endl;
         cout << endl;
     }
 }
 
-double Unit::reliability(double t, int i) const
+double Unit::reliability(int i, double t) const
 {
     double reliability = 1;
     for (const auto& r: reliabilities[i])
         reliability *= r.second->reliability(t);
     return reliability;
+}
+
+double Unit::inverse(int i, double r) const
+{
+    int r0 = (int)floor(r*(lut_size - 1));
+    int r1 = (int)ceil(r*(lut_size - 1));
+    return linterp(r, {(double)r0/(double)(lut_size - 1), inverse_reliabilities[i][r0]},
+                      {(double)r1/(double)(lut_size - 1), inverse_reliabilities[i][r1]});
 }
 
 double Unit::mttf() const
@@ -120,10 +142,10 @@ double Unit::mttf(int i) const
 
 double Unit::mttf(const shared_ptr<FailureMechanism>& mechanism) const
 {
-    return mttf(0);
+    return mttf(0, mechanism);
 }
 
-double Unit::mttf(const shared_ptr<FailureMechanism>& mechanism, int i) const
+double Unit::mttf(int i, const shared_ptr<FailureMechanism>& mechanism) const
 {
     return reliabilities[i].at(mechanism)->mttf();
 }

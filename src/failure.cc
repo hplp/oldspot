@@ -5,6 +5,7 @@
 #include <memory>
 #include <vector>
 
+#include "interp.hh"
 #include "reliability.hh"
 #include "trace.hh"
 
@@ -47,7 +48,8 @@ double NBTI::timeToFailure(const DataPoint& data, double fail) const
     if (dVth == 0)
         return 0;
     else // Linearly interpolate to find time at which dVth == dVth_fail (MTTF)
-        return (t - dt) + dt*(dVth_fail - dVth_prev)/(dVth - dVth_prev);
+        return linterp(dVth_fail, {dVth_prev, t - dt}, {dVth, t});
+//        return (t - dt) + dt*(dVth_fail - dVth_prev)/(dVth - dVth_prev);
 }
 
 shared_ptr<ReliabilityDistribution> NBTI::distribution(const vector<MTTFSegment>& mttfs) const

@@ -28,12 +28,16 @@ class Component
 
 class Unit : public Component
 {
+  private:
+    static const size_t lut_size = 1001;
+
   protected:
     double peak_power;  // W
     bool fail;
 
     std::vector<std::vector<DataPoint>> traces;
     std::vector<std::map<std::shared_ptr<FailureMechanism>, std::shared_ptr<ReliabilityDistribution>>> reliabilities;
+    std::vector<std::vector<double>> inverse_reliabilities;
 
   public:
     static char delim;
@@ -41,11 +45,12 @@ class Unit : public Component
     Unit(const pugi::xml_node& node);
     virtual double activity(const DataPoint& data) const;
     void computeReliability(const std::vector<std::shared_ptr<FailureMechanism>>& mechanisms);
-    virtual double reliability(double t, int i) const;
+    virtual double reliability(int i, double t) const;
+    virtual double inverse(int i, double r) const;
     double mttf() const override;
     virtual double mttf(int i) const;
     double mttf(const std::shared_ptr<FailureMechanism>& mechanism) const override;
-    virtual double mttf(const std::shared_ptr<FailureMechanism>& mechanism, int i) const;
+    virtual double mttf(int i, const std::shared_ptr<FailureMechanism>& mechanism) const;
     bool failed() const override { return fail; }
     virtual std::ostream& dump(std::ostream& stream) const override;
 };

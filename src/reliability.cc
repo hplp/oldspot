@@ -1,7 +1,9 @@
 #include "reliability.hh"
 
+#include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <functional>
 #include <iostream>
 #include <numeric>
 #include <stdexcept>
@@ -13,16 +15,17 @@ WeibullDistribution::WeibullDistribution(double b, const vector<MTTFSegment>& mt
     : WeibullDistribution(1, b)
 {
     // Convert MTTFs into rate parameters
-    vector<double> alphas(mttfs.size());
-    for (size_t i = 0; i < mttfs.size(); i++)
-        alphas[i] = mttfs[i].mttf/tgamma(1/beta + 1);
+    vector<double> alphas;
+    alphas.reserve(mttfs.size());
+    transform(mttfs.begin(), mttfs.end(), back_inserter(alphas),
+              [this](const MTTFSegment& a){ return a.mttf/tgamma(1/beta + 1); });
     
     // Accumulate rates into average rate [1]
-    alpha = 0;
-    for (size_t i = 0; i < alphas.size(); i++)
-        alpha += mttfs[i].duration/alphas[i];
-    alpha /= accumulate(mttfs.begin(), mttfs.end(), 0,
-                        [](double a, MTTFSegment b){ return a + b.duration; });
+    alpha = inner_product(mttfs.begin(), mttfs.end(), alphas.begin(), 0.0,
+                          plus<double>(),
+                          [](const MTTFSegment& m, double a){ return m.duration/a; })/
+            accumulate(mttfs.begin(), mttfs.end(), 0.0,
+                      [](double a, MTTFSegment b){ return a + b.duration; });
     
     // Invert to resemble actual Weibull alpha
     alpha = 1/alpha;

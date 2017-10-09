@@ -4,9 +4,11 @@
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
+#include <functional>
 #include <iostream>
 #include <limits>
 #include <memory>
+#include <numeric>
 #include <pugixml.hpp>
 #include <utility>
 #include <vector>
@@ -60,7 +62,7 @@ Unit::Unit(const xml_node& node)
             data.data["frequency"] *= 1e6; // Expecting MHz; convert to Hz
 
     reliabilities.resize(traces.size());
-    inverse_reliabilities.resize(traces.size());
+    overall_reliabilities.resize(traces.size());
 }
 
 double Unit::activity(const DataPoint& data) const
@@ -86,18 +88,9 @@ void Unit::computeReliability(const vector<shared_ptr<FailureMechanism>>& mechan
             }
             reliabilities[i][mechanism] = mechanism->distribution(mttfs);
         }
-
-        const double dt = 3600*24;
-        inverse_reliabilities[i].resize(lut_size);
-        inverse_reliabilities[i][0] = numeric_limits<double>::infinity();
-        inverse_reliabilities[i].back() = 1;
-        double t = 0;
-        for (int j = lut_size - 2; j > 0; j--)
-        {
-            double r = (double)j/(double)(lut_size - 1);
-            for (; reliability(i, t) > r; t += dt);
-            inverse_reliabilities[i][j] = linterp(r, {reliability(i, t - dt), t - dt}, {reliability(i, t), t});
-        }
+        overall_reliabilities[i] = reliabilities[i].begin()->second;
+        for (auto it = next(reliabilities[i].begin()); it != reliabilities[i].end(); ++it)
+            overall_reliabilities[i] *= it->second;
     }
 
     cout << name << ": " << traces.size() << " trace(s)" << endl;
@@ -113,18 +106,12 @@ void Unit::computeReliability(const vector<shared_ptr<FailureMechanism>>& mechan
 
 double Unit::reliability(int i, double t) const
 {
-    double reliability = 1;
-    for (const auto& r: reliabilities[i])
-        reliability *= r.second->reliability(t);
-    return reliability;
+    return overall_reliabilities[i].reliability(t);
 }
 
 double Unit::inverse(int i, double r) const
 {
-    int r0 = (int)floor(r*(lut_size - 1));
-    int r1 = (int)ceil(r*(lut_size - 1));
-    return linterp(r, {(double)r0/(double)(lut_size - 1), inverse_reliabilities[i][r0]},
-                      {(double)r1/(double)(lut_size - 1), inverse_reliabilities[i][r1]});
+    return overall_reliabilities[i].inverse(r);
 }
 
 double Unit::mttf() const
@@ -134,10 +121,7 @@ double Unit::mttf() const
 
 double Unit::mttf(int i) const
 {
-    double t = numeric_limits<double>::max();
-    for (const auto& r: reliabilities[i])
-        t = min(t, r.second->mttf());
-    return t;
+    return overall_reliabilities[i].mttf();
 }
 
 double Unit::mttf(const shared_ptr<FailureMechanism>& mechanism) const
@@ -147,7 +131,7 @@ double Unit::mttf(const shared_ptr<FailureMechanism>& mechanism) const
 
 double Unit::mttf(int i, const shared_ptr<FailureMechanism>& mechanism) const
 {
-    return reliabilities[i].at(mechanism)->mttf();
+    return reliabilities[i].at(mechanism).mttf();
 }
 
 ostream& Unit::dump(ostream& stream) const

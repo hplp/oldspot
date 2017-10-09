@@ -36,8 +36,8 @@ class Unit : public Component
     bool fail;
 
     std::vector<std::vector<DataPoint>> traces;
-    std::vector<std::map<std::shared_ptr<FailureMechanism>, std::shared_ptr<ReliabilityDistribution>>> reliabilities;
-    std::vector<std::vector<double>> inverse_reliabilities;
+    std::vector<std::map<std::shared_ptr<FailureMechanism>, WeibullDistribution>> reliabilities;
+    std::vector<WeibullDistribution> overall_reliabilities;
 
   public:
     static char delim;

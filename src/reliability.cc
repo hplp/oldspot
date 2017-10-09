@@ -4,12 +4,13 @@
 #include <cstddef>
 #include <iostream>
 #include <numeric>
+#include <stdexcept>
 #include <vector>
 
 using namespace std;
 
-WeibullDistribution::WeibullDistribution(double _b, const vector<MTTFSegment>& mttfs)
-    : alpha(0), beta(_b)
+WeibullDistribution::WeibullDistribution(double b, const vector<MTTFSegment>& mttfs)
+    : WeibullDistribution(1, b)
 {
     // Convert MTTFs into rate parameters
     vector<double> alphas(mttfs.size());
@@ -17,6 +18,7 @@ WeibullDistribution::WeibullDistribution(double _b, const vector<MTTFSegment>& m
         alphas[i] = mttfs[i].mttf/tgamma(1/beta + 1);
     
     // Accumulate rates into average rate [1]
+    alpha = 0;
     for (size_t i = 0; i < alphas.size(); i++)
         alpha += mttfs[i].duration/alphas[i];
     alpha /= accumulate(mttfs.begin(), mttfs.end(), 0,
@@ -39,6 +41,21 @@ double WeibullDistribution::inverse(double r) const
 double WeibullDistribution::mttf() const
 {
     return alpha*tgamma(1/beta + 1);
+}
+
+WeibullDistribution WeibullDistribution::operator*(const WeibullDistribution& other) const
+{
+    if (beta != other.beta)
+        throw invalid_argument("the product of two Weibull distributions with different shapes does not follow a Weibull distribution");
+    double a = pow(pow(1/alpha, beta) + pow(1/other.alpha, beta), -1/beta);
+    return WeibullDistribution(a, beta);
+}
+
+WeibullDistribution& WeibullDistribution::operator=(const WeibullDistribution& other)
+{
+    alpha = other.alpha;
+    beta = other.beta;
+    return *this;
 }
 
 /*

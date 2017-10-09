@@ -8,25 +8,23 @@ struct MTTFSegment
     double mttf;
 };
 
-class ReliabilityDistribution
-{
-  public:
-    virtual double reliability(double t) const = 0; // aka survivor function
-    virtual double inverse(double r) const = 0; // time to reach reliability r
-    virtual double mttf() const = 0;
-    // pdf, CDF, hazard, etc.
-};
-
-class WeibullDistribution : public ReliabilityDistribution
+class WeibullDistribution
 {
   private:
     double alpha;
     double beta;
 
   public:
-    WeibullDistribution(double _b, const std::vector<MTTFSegment>& mttfs);
+    WeibullDistribution(double a, double b) : alpha(a), beta(b) {}
+    WeibullDistribution() : WeibullDistribution(1, 1) {}
+    WeibullDistribution(const WeibullDistribution& other) : WeibullDistribution(other.alpha, other.beta) {}
+    WeibullDistribution(double b, const std::vector<MTTFSegment>& mttfs);
 
-    double reliability(double t) const override;
-    double inverse(double r) const override;
-    double mttf() const override;
+    double reliability(double t) const;
+    double inverse(double r) const;
+    double mttf() const;
+
+    WeibullDistribution operator*(const WeibullDistribution& other) const;
+    WeibullDistribution& operator=(const WeibullDistribution& other);
+    WeibullDistribution& operator*=(const WeibullDistribution& other) { return *this = (*this)*other; }
 };

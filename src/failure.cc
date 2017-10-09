@@ -49,10 +49,9 @@ double NBTI::timeToFailure(const DataPoint& data, double fail) const
         return 0;
     else // Linearly interpolate to find time at which dVth == dVth_fail (MTTF)
         return linterp(dVth_fail, {dVth_prev, t - dt}, {dVth, t});
-//        return (t - dt) + dt*(dVth_fail - dVth_prev)/(dVth - dVth_prev);
 }
 
-shared_ptr<ReliabilityDistribution> NBTI::distribution(const vector<MTTFSegment>& mttfs) const
+WeibullDistribution NBTI::distribution(const vector<MTTFSegment>& mttfs) const
 {
-    return make_shared<WeibullDistribution>(beta, mttfs);
+    return WeibullDistribution(beta, mttfs);
 }

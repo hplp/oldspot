@@ -29,7 +29,7 @@ ostream& operator<<(ostream& stream, const Component& c)
 char Unit::delim = ',';
 
 Unit::Unit(const xml_node& node)
-    : Component(node.attribute("name").value()), peak_power(0)
+    : Component(node.attribute("name").value()), peak_power(0), _healthy(true), current_reliability(1)
 {
     map<string, double> defaults = {{"vdd", 1}, {"temperature", 350}, {"frequency", 1000}};
     for (const xml_node& def: node.children("default"))
@@ -104,9 +104,19 @@ void Unit::computeReliability(const vector<shared_ptr<FailureMechanism>>& mechan
     }
 }
 
+double Unit::reliability(double t) const
+{
+    return reliability(0, t);
+}
+
 double Unit::reliability(int i, double t) const
 {
     return overall_reliabilities[i].reliability(t);
+}
+
+double Unit::inverse(double r) const
+{
+    return inverse(0, r);
 }
 
 double Unit::inverse(int i, double r) const
@@ -140,7 +150,7 @@ ostream& Unit::dump(ostream& stream) const
 }
 
 Group::Group(const xml_node& node, vector<shared_ptr<Unit>>& units)
-    : Component(node.attribute("name").value()), failures(0)
+    : Component(node.attribute("name").value()), failures(node.attribute("failures").as_int())
 {
     for (const xml_node& child: node.children())
     {
@@ -170,9 +180,10 @@ double Group::mttf(const shared_ptr<FailureMechanism>& mechanism) const
     return 0;
 }
 
-bool Group::failed() const
+bool Group::healthy() const
 {
-    return count_if(_children.begin(), _children.end(), [](const shared_ptr<Component>& c){ return c->failed(); }) > failures;
+    return count_if(_children.begin(), _children.end(),
+                    [](const shared_ptr<Component>& c){ return c->healthy(); }) <= failures;
 }
 
 ostream& Group::dump(ostream& stream) const

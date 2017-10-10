@@ -25,7 +25,7 @@ WeibullDistribution::WeibullDistribution(double b, const vector<MTTFSegment>& mt
                           plus<double>(),
                           [](const MTTFSegment& m, double a){ return m.duration/a; })/
             accumulate(mttfs.begin(), mttfs.end(), 0.0,
-                      [](double a, MTTFSegment b){ return a + b.duration; });
+                       [](double a, MTTFSegment b){ return a + b.duration; });
     
     // Invert to resemble actual Weibull alpha
     alpha = 1/alpha;

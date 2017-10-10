@@ -21,7 +21,7 @@ class Component
     virtual double mttf() const = 0;
     virtual double mttf(const std::shared_ptr<FailureMechanism>& mechanism) const = 0;
     virtual std::ostream& dump(std::ostream& stream) const = 0;
-    virtual bool failed() const = 0;
+    virtual bool healthy() const = 0;
 
     friend std::ostream& operator<<(std::ostream& stream, const Component& c);
 };
@@ -33,7 +33,7 @@ class Unit : public Component
 
   protected:
     double peak_power;  // W
-    bool fail;
+    bool _healthy;
 
     std::vector<std::vector<DataPoint>> traces;
     std::vector<std::map<std::shared_ptr<FailureMechanism>, WeibullDistribution>> reliabilities;
@@ -41,17 +41,21 @@ class Unit : public Component
 
   public:
     static char delim;
+    double current_reliability;
 
     Unit(const pugi::xml_node& node);
     virtual double activity(const DataPoint& data) const;
     void computeReliability(const std::vector<std::shared_ptr<FailureMechanism>>& mechanisms);
+    double reliability(double t) const;
     virtual double reliability(int i, double t) const;
+    double inverse(double r) const;
     virtual double inverse(int i, double r) const;
     double mttf() const override;
     virtual double mttf(int i) const;
     double mttf(const std::shared_ptr<FailureMechanism>& mechanism) const override;
     virtual double mttf(int i, const std::shared_ptr<FailureMechanism>& mechanism) const;
-    bool failed() const override { return fail; }
+    bool healthy() const { return _healthy; }
+    void healthy(bool _h) { _healthy = _h; }
     virtual std::ostream& dump(std::ostream& stream) const override;
 };
 
@@ -66,6 +70,6 @@ class Group : public Component
     const std::vector<std::shared_ptr<Component>>& children() const { return _children; }
     double mttf() const override;
     double mttf(const std::shared_ptr<FailureMechanism>& mechanism) const override;
-    bool failed() const;
+    bool healthy() const;
     std::ostream& dump(std::ostream& ostream) const override;
 };

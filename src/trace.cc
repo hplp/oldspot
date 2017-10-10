@@ -19,9 +19,9 @@ using namespace std;
 ostream& operator<<(ostream& stream, const DataPoint& point)
 {
     stream << point.time << ":{";
-    stream << std::accumulate(next(point.data.begin()), point.data.end(),
-                              point.data.begin()->first + ':' + to_string(point.data.begin()->second),
-                              [](string a, const pair<string, double>& b){ return a + ',' + b.first + ':' + to_string(b.second); });
+    stream << accumulate(next(point.data.begin()), point.data.end(),
+                         point.data.begin()->first + ':' + to_string(point.data.begin()->second),
+                         [](string a, const pair<string, double>& b){ return a + ',' + b.first + ':' + to_string(b.second); });
     return stream << "}";
 }
 

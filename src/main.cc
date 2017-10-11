@@ -1,3 +1,4 @@
+#include <cstdint>
 #include <cstring>
 #include <iostream>
 #include <map>
@@ -27,7 +28,7 @@ int main(int argc, char* argv[])
     try
     {
         CmdLine cmd("Compute the reliability distribution of a chip", ' ', "0.1");
-        ValueArg<int> iterations("n", "iterations", "Number of Monte-Carlo iterations to perform (default: 1)", false, 1, "iterations", cmd);
+        ValueArg<int> iterations("n", "iterations", "Number of Monte-Carlo iterations to perform (default: 1000)", false, 1000, "iterations", cmd);
         ValueArg<char> delimiter("", "trace-delimiter", "One-character delimiter for data in input trace files (default: ,)", false, ',', "delim", cmd);
         UnlabeledValueArg<string> config("chip-config", "File containing chip configuration", true, "", "filename", cmd);
         cmd.parse(argc, argv);
@@ -56,6 +57,14 @@ int main(int argc, char* argv[])
     for (const shared_ptr<Unit>& unit: units)
         unit->computeReliability(mechanisms);
 
+    for (uint64_t i = 0; i < (1ULL << units.size()); i++)
+    {
+        for (size_t j = 0; j < units.size(); j++)
+            units[j]->failed((i&(1 << j)) == 0);
+        if (!root.failed())
+            Unit::add_configuration(i);
+    }
+
     // Monte Carlo sim to get overall failure distribution
     vector<double> ttfs(n);
     random_device dev;
@@ -66,17 +75,14 @@ int main(int argc, char* argv[])
         double fail_time = 0;
         double t_eq_prev = 0;
         for (const shared_ptr<Unit>& unit: units)
+            unit->reset();
+        while (!root.failed())
         {
-            unit->healthy(true);
-            unit->current_reliability = 1;
-        }
-        while (root.healthy())
-        {
-            // Determine which failure distributions to use based on which units are still healthy
+            Unit::set_configuration(units);
             shared_ptr<Unit> failed = nullptr;
             for (const shared_ptr<Unit>& unit: units)
             {
-                if (unit->healthy())
+                if (!unit->failed())
                 {
                     uniform_real_distribution<double> r(0, unit->current_reliability);
                     double t = unit->inverse(r(gen));
@@ -91,7 +97,7 @@ int main(int argc, char* argv[])
                 }
             }
             total_time += fail_time;
-            failed->healthy(false);
+            failed->failed(true);
             for (shared_ptr<Unit>& unit: units)
                 unit->current_reliability = unit->reliability(fail_time + t_eq_prev);
         }

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <limits>
 #include <map>
 #include <memory>
@@ -21,7 +22,7 @@ class Component
     virtual double mttf() const = 0;
     virtual double mttf(const std::shared_ptr<FailureMechanism>& mechanism) const = 0;
     virtual std::ostream& dump(std::ostream& stream) const = 0;
-    virtual bool healthy() const = 0;
+    virtual bool failed() const = 0;
 
     friend std::ostream& operator<<(std::ostream& stream, const Component& c);
 };
@@ -29,11 +30,12 @@ class Component
 class Unit : public Component
 {
   private:
-    static const size_t lut_size = 1001;
+    static int index;
+    static std::map<uint64_t, int> trace_indices;
 
   protected:
     double peak_power;  // W
-    bool _healthy;
+    bool _failed;
 
     std::vector<std::vector<DataPoint>> traces;
     std::vector<std::map<std::shared_ptr<FailureMechanism>, WeibullDistribution>> reliabilities;
@@ -41,9 +43,14 @@ class Unit : public Component
 
   public:
     static char delim;
+
     double current_reliability;
 
+    static void add_configuration(uint64_t config);
+    static void set_configuration(const std::vector<std::shared_ptr<Unit>>& units);
+
     Unit(const pugi::xml_node& node);
+    void reset();
     virtual double activity(const DataPoint& data) const;
     void computeReliability(const std::vector<std::shared_ptr<FailureMechanism>>& mechanisms);
     double reliability(double t) const;
@@ -54,15 +61,15 @@ class Unit : public Component
     virtual double mttf(int i) const;
     double mttf(const std::shared_ptr<FailureMechanism>& mechanism) const override;
     virtual double mttf(int i, const std::shared_ptr<FailureMechanism>& mechanism) const;
-    bool healthy() const { return _healthy; }
-    void healthy(bool _h) { _healthy = _h; }
+    bool failed() const { return _failed; }
+    void failed(bool f) { _failed = f; }
     virtual std::ostream& dump(std::ostream& stream) const override;
 };
 
 class Group : public Component
 {
   private:
-    int failures;
+    unsigned int failures;
     std::vector<std::shared_ptr<Component>> _children;
 
   public:
@@ -70,6 +77,6 @@ class Group : public Component
     const std::vector<std::shared_ptr<Component>>& children() const { return _children; }
     double mttf() const override;
     double mttf(const std::shared_ptr<FailureMechanism>& mechanism) const override;
-    bool healthy() const;
+    bool failed() const;
     std::ostream& dump(std::ostream& ostream) const override;
 };

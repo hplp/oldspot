@@ -31,21 +31,6 @@ WeibullDistribution::WeibullDistribution(double b, const vector<MTTFSegment>& mt
     alpha = 1/alpha;
 }
 
-double WeibullDistribution::reliability(double t) const
-{
-    return exp(-pow(t/alpha, beta));
-}
-
-double WeibullDistribution::inverse(double r) const
-{
-    return alpha*pow(-log(r), 1/beta);
-}
-
-double WeibullDistribution::mttf() const
-{
-    return alpha*tgamma(1/beta + 1);
-}
-
 WeibullDistribution WeibullDistribution::operator*(const WeibullDistribution& other) const
 {
     if (beta != other.beta)

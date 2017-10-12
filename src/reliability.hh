@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cmath>
 #include <vector>
 
 struct MTTFSegment
@@ -20,9 +21,9 @@ class WeibullDistribution
     WeibullDistribution(const WeibullDistribution& other) : WeibullDistribution(other.alpha, other.beta) {}
     WeibullDistribution(double b, const std::vector<MTTFSegment>& mttfs);
 
-    double reliability(double t) const;
-    double inverse(double r) const;
-    double mttf() const;
+    double reliability(double t) const { return std::exp(-std::pow(t/alpha, beta)); }
+    double inverse(double r) const { return alpha*std::pow(-std::log(r), 1/beta); }
+    double mttf() const { return alpha*std::tgamma(1/beta + 1); }
 
     WeibullDistribution operator*(const WeibullDistribution& other) const;
     WeibullDistribution& operator=(const WeibullDistribution& other);

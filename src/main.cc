@@ -1,6 +1,8 @@
+#include <algorithm>
 #include <cstdint>
 #include <cstring>
 #include <iostream>
+#include <limits>
 #include <map>
 #include <memory>
 #include <numeric>
@@ -60,7 +62,7 @@ int main(int argc, char* argv[])
     for (uint64_t i = 0; i < (1ULL << units.size()); i++)
     {
         for (size_t j = 0; j < units.size(); j++)
-            units[j]->failed((i&(1 << j)) == 0);
+            units[j]->failed((i&(1 << j)) != 0);
         if (!root->failed())
             Unit::add_configuration(i);
     }
@@ -75,6 +77,9 @@ int main(int argc, char* argv[])
         double t_eq_prev = 0;
         for (shared_ptr<Unit>& unit: units)
             unit->reset();
+        Component::walk(root, [&](const shared_ptr<Component>& c){
+            c->ttfs[i] = numeric_limits<double>::infinity();
+        });
         while (!root->failed())
         {
             Unit::set_configuration(units);
@@ -102,9 +107,13 @@ int main(int argc, char* argv[])
             
             Component::walk(root, [&](const shared_ptr<Component>& c) {
                 if (c->failed())
-                    c->ttfs[i] = total_time;
+                    c->ttfs[i] = min(c->ttfs[i], total_time);
             });
         }
+        Component::walk(root, [&](const shared_ptr<Component>& c) {
+            if (isinf(c->ttfs[i]))
+                c->ttfs[i] = root->ttfs[i];
+        });
     }
 
     Component::walk(root, [](const shared_ptr<Component>& c) {

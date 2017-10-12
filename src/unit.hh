@@ -77,8 +77,6 @@ class Unit : public Component
     virtual double reliability(int i, double t) const;
     double inverse(double r) const;
     virtual double inverse(int i, double r) const;
-    double mttf() const override;
-    virtual double mttf(int i) const;
     bool failed() const { return _failed; }
     void failed(bool f) { _failed = f; }
     virtual std::ostream& dump(std::ostream& stream) const override;

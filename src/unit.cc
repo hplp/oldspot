@@ -46,7 +46,7 @@ void Unit::add_configuration(uint64_t config)
 void Unit::set_configuration(const vector<shared_ptr<Unit>>& units)
 {
     uint64_t config = accumulate(units.begin(), units.end(), 0,
-                                 [](uint64_t a, const shared_ptr<Unit>& b){ return (a << 1) | (b->failed() ? 0 : 1); });
+                                 [](uint64_t a, const shared_ptr<Unit>& b){ return (a << 1) | (b->failed() ? 1 : 0); });
     index = trace_indices.at(config);
 }
 
@@ -146,16 +146,6 @@ double Unit::inverse(double r) const
 double Unit::inverse(int i, double r) const
 {
     return overall_reliabilities[i].inverse(r);
-}
-
-double Unit::mttf() const
-{
-    return mttf(index);
-}
-
-double Unit::mttf(int i) const
-{
-    return overall_reliabilities[i].mttf();
 }
 
 ostream& Unit::dump(ostream& stream) const

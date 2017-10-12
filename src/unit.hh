@@ -73,9 +73,9 @@ class Unit : public Component
     void reset();
     virtual double activity(const DataPoint& data) const;
     void computeReliability(const std::vector<std::shared_ptr<FailureMechanism>>& mechanisms);
-    double reliability(double t) const;
+    double reliability(double t) const { return reliability(index, t); }
     virtual double reliability(int i, double t) const;
-    double inverse(double r) const;
+    double inverse(double r) const { return inverse(index, r); }
     virtual double inverse(int i, double r) const;
     bool failed() const { return _failed; }
     void failed(bool f) { _failed = f; }

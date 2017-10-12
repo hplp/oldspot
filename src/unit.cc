@@ -128,19 +128,9 @@ void Unit::computeReliability(const vector<shared_ptr<FailureMechanism>>& mechan
     }
 }
 
-double Unit::reliability(double t) const
-{
-    return reliability(index, t);
-}
-
 double Unit::reliability(int i, double t) const
 {
     return overall_reliabilities[i].reliability(t);
-}
-
-double Unit::inverse(double r) const
-{
-    return inverse(index, r);
 }
 
 double Unit::inverse(int i, double r) const

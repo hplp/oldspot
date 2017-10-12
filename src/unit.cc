@@ -22,6 +22,11 @@
 using namespace pugi;
 using namespace std;
 
+double Component::mttf() const
+{
+    return accumulate(ttfs.begin(), ttfs.end(), 0.0)/ttfs.size();
+}
+
 ostream& operator<<(ostream& stream, const Component& c)
 {
     return c.dump(stream);
@@ -45,8 +50,8 @@ void Unit::set_configuration(const vector<shared_ptr<Unit>>& units)
     index = trace_indices.at(config);
 }
 
-Unit::Unit(const xml_node& node)
-    : Component(node.attribute("name").value()), peak_power(0), _failed(false), current_reliability(1)
+Unit::Unit(const xml_node& node, size_t n)
+    : Component(node.attribute("name").value(), n), peak_power(0), _failed(false), current_reliability(1)
 {
     map<string, double> defaults = {{"vdd", 1}, {"temperature", 350}, {"frequency", 1000}};
     for (const xml_node& def: node.children("default"))
@@ -80,6 +85,12 @@ Unit::Unit(const xml_node& node)
 
     reliabilities.resize(traces.size());
     overall_reliabilities.resize(traces.size());
+}
+
+vector<shared_ptr<Component>>& Unit::children()
+{
+    static vector<shared_ptr<Component>> no_children;
+    return no_children;
 }
 
 void Unit::reset()
@@ -147,31 +158,21 @@ double Unit::mttf(int i) const
     return overall_reliabilities[i].mttf();
 }
 
-double Unit::mttf(const shared_ptr<FailureMechanism>& mechanism) const
-{
-    return mttf(index, mechanism);
-}
-
-double Unit::mttf(int i, const shared_ptr<FailureMechanism>& mechanism) const
-{
-    return reliabilities[i].at(mechanism).mttf();
-}
-
 ostream& Unit::dump(ostream& stream) const
 {
     return stream << name;
 }
 
-Group::Group(const xml_node& node, vector<shared_ptr<Unit>>& units)
-    : Component(node.attribute("name").value()), failures(node.attribute("failures").as_int())
+Group::Group(const xml_node& node, vector<shared_ptr<Unit>>& units, size_t n)
+    : Component(node.attribute("name").value(), n), failures(node.attribute("failures").as_int())
 {
     for (const xml_node& child: node.children())
     {
         if (strcmp(child.name(), "group") == 0)
-            _children.push_back(make_shared<Group>(child, units));
+            _children.push_back(make_shared<Group>(child, units, n));
         else if (strcmp(child.name(), "unit") == 0)
         {
-            shared_ptr<Unit> unit = make_shared<Unit>(child);
+            shared_ptr<Unit> unit = make_shared<Unit>(child, n);
             units.push_back(unit);
             _children.push_back(unit);
         }
@@ -181,16 +182,6 @@ Group::Group(const xml_node& node, vector<shared_ptr<Unit>>& units)
             exit(1);
         }
     }
-}
-
-double Group::mttf() const
-{
-    return 0;
-}
-
-double Group::mttf(const shared_ptr<FailureMechanism>& mechanism) const
-{
-    return 0;
 }
 
 bool Group::failed() const

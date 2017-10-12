@@ -6,6 +6,7 @@
 #include <memory>
 #include <ostream>
 #include <pugixml.hpp>
+#include <stack>
 #include <string>
 #include <vector>
 
@@ -16,14 +17,32 @@
 class Component
 {
   public:
-    const std::string name;
+    template<typename function>
+    static void walk(const std::shared_ptr<Component>& root, function&& op)
+    {
+        using namespace std;
+    
+        stack<shared_ptr<Component>> components;
+        components.push(root);
+        while (!components.empty())
+        {
+            shared_ptr<Component> component = components.top();
+            components.pop();
+            op(component);
+            for (const shared_ptr<Component>& child: component->children())
+                components.push(child);
+        }
+    }
 
-    Component(const std::string _n) : name(_n) {}
-    virtual double mttf() const = 0;
-    virtual double mttf(const std::shared_ptr<FailureMechanism>& mechanism) const = 0;
-    virtual std::ostream& dump(std::ostream& stream) const = 0;
+    const std::string name;
+    std::vector<double> ttfs;
+
+    Component(const std::string _n, size_t n=1) : name(_n) { ttfs.resize(n); }
+    virtual std::vector<std::shared_ptr<Component>>& children() = 0;
+    virtual double mttf() const;
     virtual bool failed() const = 0;
 
+    virtual std::ostream& dump(std::ostream& stream) const = 0;
     friend std::ostream& operator<<(std::ostream& stream, const Component& c);
 };
 
@@ -49,7 +68,8 @@ class Unit : public Component
     static void add_configuration(uint64_t config);
     static void set_configuration(const std::vector<std::shared_ptr<Unit>>& units);
 
-    Unit(const pugi::xml_node& node);
+    Unit(const pugi::xml_node& node, size_t n=1);
+    std::vector<std::shared_ptr<Component>>& children() override;
     void reset();
     virtual double activity(const DataPoint& data) const;
     void computeReliability(const std::vector<std::shared_ptr<FailureMechanism>>& mechanisms);
@@ -59,8 +79,6 @@ class Unit : public Component
     virtual double inverse(int i, double r) const;
     double mttf() const override;
     virtual double mttf(int i) const;
-    double mttf(const std::shared_ptr<FailureMechanism>& mechanism) const override;
-    virtual double mttf(int i, const std::shared_ptr<FailureMechanism>& mechanism) const;
     bool failed() const { return _failed; }
     void failed(bool f) { _failed = f; }
     virtual std::ostream& dump(std::ostream& stream) const override;
@@ -73,10 +91,8 @@ class Group : public Component
     std::vector<std::shared_ptr<Component>> _children;
 
   public:
-    Group(const pugi::xml_node& node, std::vector<std::shared_ptr<Unit>>& units);
-    const std::vector<std::shared_ptr<Component>>& children() const { return _children; }
-    double mttf() const override;
-    double mttf(const std::shared_ptr<FailureMechanism>& mechanism) const override;
+    Group(const pugi::xml_node& node, std::vector<std::shared_ptr<Unit>>& units, size_t n=1);
+    std::vector<std::shared_ptr<Component>>& children() override { return _children; }
     bool failed() const;
     std::ostream& dump(std::ostream& ostream) const override;
 };

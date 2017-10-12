@@ -51,7 +51,7 @@ int main(int argc, char* argv[])
     }
 
     vector<shared_ptr<Unit>> units;
-    Group root(doc, units);
+    shared_ptr<Component> root = make_shared<Group>(doc, units, n);
 
     vector<shared_ptr<FailureMechanism>> mechanisms = {NBTI::model()};
     for (const shared_ptr<Unit>& unit: units)
@@ -61,12 +61,11 @@ int main(int argc, char* argv[])
     {
         for (size_t j = 0; j < units.size(); j++)
             units[j]->failed((i&(1 << j)) == 0);
-        if (!root.failed())
+        if (!root->failed())
             Unit::add_configuration(i);
     }
 
     // Monte Carlo sim to get overall failure distribution
-    vector<double> ttfs(n);
     random_device dev;
     mt19937 gen(dev());
     for (int i = 0; i < n; i++)
@@ -74,9 +73,9 @@ int main(int argc, char* argv[])
         double total_time = 0;
         double fail_time = 0;
         double t_eq_prev = 0;
-        for (const shared_ptr<Unit>& unit: units)
+        for (shared_ptr<Unit>& unit: units)
             unit->reset();
-        while (!root.failed())
+        while (!root->failed())
         {
             Unit::set_configuration(units);
             shared_ptr<Unit> failed = nullptr;
@@ -98,11 +97,19 @@ int main(int argc, char* argv[])
             }
             total_time += fail_time;
             failed->failed(true);
-            for (shared_ptr<Unit>& unit: units)
+            for (const shared_ptr<Unit>& unit: units)
                 unit->current_reliability = unit->reliability(fail_time + t_eq_prev);
+            
+            Component::walk(root, [&](const shared_ptr<Component>& c) {
+                if (c->failed())
+                    c->ttfs[i] = total_time;
+            });
         }
-        ttfs[i] = total_time;
     }
+
+    Component::walk(root, [](const shared_ptr<Component>& c) {
+        cout << c->name << ": " << c->mttf()/(60*60*24*365) << endl;
+    });
 
     return 0;
 }

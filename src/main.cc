@@ -20,6 +20,32 @@
 
 using namespace std;
 
+// Assumes time is already in seconds
+double convert_time(double time, const string& units)
+{
+    if (units == "seconds")
+        return time;
+    time /= 60;
+    if (units == "minutes")
+        return time;
+    time /= 60;
+    if (units == "hours")
+        return time;
+    time /= 24;
+    if (units == "days")
+        return time;
+    time /= 7;
+    if (units == "weeks")
+        return time;
+    time /= 4;
+    if (units == "months")
+        return time;
+    time /= 12;
+    if (units == "years")
+        return time;
+    throw invalid_argument("unknown time unit \"" + units + '"');
+}
+
 int main(int argc, char* argv[])
 {
     using namespace pugi;
@@ -27,13 +53,18 @@ int main(int argc, char* argv[])
 
     int n;
     bool print_rates;
+    string time_units;
     xml_document doc;
 
     try
     {
+        vector<string> units = {"seconds", "minutes", "hours", "days", "weeks", "months", "years"};
+        ValuesConstraint<string> unit_values(units);
+
         CmdLine cmd("Compute the reliability distribution of a chip", ' ', "0.1");
         SwitchArg rates("", "print-aging-rates", "Print aging rate of each unit for each trace", cmd);
         ValueArg<char> delimiter("", "trace-delimiter", "One-character delimiter for data in input trace files (default: ,)", false, ',', "delim", cmd);
+        ValueArg<string> time("", "time-units", "Units for displaying time to failure (default: hours)", false, "hours", &unit_values, cmd);
         ValueArg<int> iterations("n", "iterations", "Number of Monte-Carlo iterations to perform (default: 1000)", false, 1000, "iterations", cmd);
         UnlabeledValueArg<string> config("chip-config", "File containing chip configuration", true, "", "filename", cmd);
         cmd.parse(argc, argv);
@@ -48,6 +79,7 @@ int main(int argc, char* argv[])
 
         Unit::delim = delimiter.getValue();
         n = iterations.getValue();
+        time_units = time.getValue();
         print_rates = rates.getValue();
     }
     catch (ArgException& e)
@@ -79,19 +111,21 @@ int main(int argc, char* argv[])
         {
             name_width = max(name_width, unit->name.length());
             for (size_t i = 0; i < Unit::configurations(); i++)
-                rate_width = max(rate_width, to_string(unit->aging_rate(i)).length());
+                rate_width = max(rate_width, to_string(convert_time(unit->aging_rate(i), time_units)).length());
         }
+        cout << "Aging Rates:" << endl;
         for (const shared_ptr<Unit>& unit: units)
         {
             cout << left << setw(name_width) << unit->name << " | ";
             for (size_t i = 0; i < Unit::configurations(); i++)
             {
-                cout << right << setw(rate_width) << (unit->aging_rate(i) == 0 ? f : to_string(unit->aging_rate(i)));
+                cout << right << setw(rate_width) << (unit->aging_rate(i) == 0 ? f : to_string(convert_time(unit->aging_rate(i), time_units)));
                 if (i != Unit::configurations() - 1)
                     cout << " | ";
             }
             cout << endl;
         }
+        cout << endl;
     }
 
     // Monte Carlo sim to get overall failure distribution
@@ -143,8 +177,9 @@ int main(int argc, char* argv[])
         });
     }
 
-    Component::walk(root, [](const shared_ptr<Component>& c) {
-        cout << (c->name.empty() ? "Overall" : c->name) << ": " << c->mttf()/(60*60*24*365) << endl;
+    cout << "MTTFs:" << endl;
+    Component::walk(root, [&](const shared_ptr<Component>& c) {
+        cout << (c->name.empty() ? "Overall" : c->name) << ": " << convert_time(c->mttf(), time_units) << endl;
     });
 
     return 0;

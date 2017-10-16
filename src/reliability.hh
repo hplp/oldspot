@@ -24,6 +24,7 @@ class WeibullDistribution
     double reliability(double t) const { return std::exp(-std::pow(t/alpha, beta)); }
     double inverse(double r) const { return alpha*std::pow(-std::log(r), 1/beta); }
     double mttf() const { return alpha*std::tgamma(1/beta + 1); }
+    double rate() const { return alpha; }
 
     WeibullDistribution operator*(const WeibullDistribution& other) const;
     WeibullDistribution& operator=(const WeibullDistribution& other);

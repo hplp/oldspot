@@ -129,6 +129,14 @@ void Unit::computeReliability(const vector<shared_ptr<FailureMechanism>>& mechan
     }
 }
 
+double Unit::aging_rate(int i) const
+{
+    if (failed_in_trace(i))
+        return 0;
+    else
+        return overall_reliabilities[i].rate();
+}
+
 double Unit::reliability(int i, double t) const
 {
     return overall_reliabilities[i].reliability(t);
@@ -137,6 +145,16 @@ double Unit::reliability(int i, double t) const
 double Unit::inverse(int i, double r) const
 {
     return overall_reliabilities[i].inverse(r);
+}
+
+bool Unit::failed_in_trace(int i) const
+{
+    auto result = find_if(trace_indices.begin(), trace_indices.end(),
+                          [&](pair<uint64_t, int> a){ return a.second == i; });
+    if (result != trace_indices.end())
+        return (result->first&(1 << id)) != 0;
+    else
+        return false;
 }
 
 ostream& Unit::dump(ostream& stream) const
@@ -169,7 +187,7 @@ bool Group::failed() const
 {
     unsigned int f = count_if(_children.begin(), _children.end(),
                               [](const shared_ptr<Component>& c){ return c->failed(); });
-    return f > failures;
+    return f > failures || f >= _children.size();
 }
 
 ostream& Group::dump(ostream& stream) const

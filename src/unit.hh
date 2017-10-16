@@ -63,12 +63,13 @@ class Unit : public Component
   public:
     static char delim;
 
-    double current_reliability;
-
     static void add_configuration(uint64_t config);
     static void set_configuration(const std::vector<std::shared_ptr<Unit>>& units);
 
-    Unit(const pugi::xml_node& node, size_t n=1);
+    const unsigned int id;
+    double current_reliability;
+
+    Unit(const pugi::xml_node& node, unsigned int i, size_t n=1);
     std::vector<std::shared_ptr<Component>>& children() override;
     void reset();
     virtual double activity(const DataPoint& data) const;

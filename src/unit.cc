@@ -50,8 +50,9 @@ void Unit::set_configuration(const vector<shared_ptr<Unit>>& units)
     index = trace_indices.at(config);
 }
 
-Unit::Unit(const xml_node& node, size_t n)
-    : Component(node.attribute("name").value(), n), peak_power(0), _failed(false), current_reliability(1)
+Unit::Unit(const xml_node& node, unsigned int i, size_t n)
+    : Component(node.attribute("name").value(), n),
+      peak_power(0), _failed(false), id(i), current_reliability(1)
 {
     map<string, double> defaults = {{"vdd", 1}, {"temperature", 350}, {"frequency", 1000}};
     for (const xml_node& def: node.children("default"))
@@ -152,7 +153,7 @@ Group::Group(const xml_node& node, vector<shared_ptr<Unit>>& units, size_t n)
             _children.push_back(make_shared<Group>(child, units, n));
         else if (strcmp(child.name(), "unit") == 0)
         {
-            shared_ptr<Unit> unit = make_shared<Unit>(child, n);
+            shared_ptr<Unit> unit = make_shared<Unit>(child, units.size(), n);
             units.push_back(unit);
             _children.push_back(unit);
         }

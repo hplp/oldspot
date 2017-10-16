@@ -61,8 +61,8 @@ int main(int argc, char* argv[])
 
     for (uint64_t i = 0; i < (1ULL << units.size()); i++)
     {
-        for (size_t j = 0; j < units.size(); j++)
-            units[j]->failed((i&(1 << j)) != 0);
+        for (const shared_ptr<Unit>& unit: units)
+            unit->failed((i&(1 << unit->id)) != 0);
         if (!root->failed())
             Unit::add_configuration(i);
     }

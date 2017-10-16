@@ -144,7 +144,7 @@ int main(int argc, char* argv[])
     }
 
     Component::walk(root, [](const shared_ptr<Component>& c) {
-        cout << c->name << ": " << c->mttf()/(60*60*24*365) << endl;
+        cout << (c->name.empty() ? "Overall" : c->name) << ": " << c->mttf()/(60*60*24*365) << endl;
     });
 
     return 0;

@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <cstring>
+#include <iomanip>
 #include <iostream>
 #include <limits>
 #include <map>
@@ -25,13 +26,15 @@ int main(int argc, char* argv[])
     using namespace TCLAP;
 
     int n;
+    bool print_rates;
     xml_document doc;
 
     try
     {
         CmdLine cmd("Compute the reliability distribution of a chip", ' ', "0.1");
-        ValueArg<int> iterations("n", "iterations", "Number of Monte-Carlo iterations to perform (default: 1000)", false, 1000, "iterations", cmd);
+        SwitchArg rates("", "print-aging-rates", "Print aging rate of each unit for each trace", cmd);
         ValueArg<char> delimiter("", "trace-delimiter", "One-character delimiter for data in input trace files (default: ,)", false, ',', "delim", cmd);
+        ValueArg<int> iterations("n", "iterations", "Number of Monte-Carlo iterations to perform (default: 1000)", false, 1000, "iterations", cmd);
         UnlabeledValueArg<string> config("chip-config", "File containing chip configuration", true, "", "filename", cmd);
         cmd.parse(argc, argv);
 
@@ -45,6 +48,7 @@ int main(int argc, char* argv[])
 
         Unit::delim = delimiter.getValue();
         n = iterations.getValue();
+        print_rates = rates.getValue();
     }
     catch (ArgException& e)
     {
@@ -65,6 +69,29 @@ int main(int argc, char* argv[])
             unit->failed((i&(1 << unit->id)) != 0);
         if (!root->failed())
             Unit::add_configuration(i);
+    }
+    if (print_rates)
+    {
+        const string f = "(failed)";
+        size_t rate_width = f.length();
+        size_t name_width = 0;
+        for (const shared_ptr<Unit>& unit: units)
+        {
+            name_width = max(name_width, unit->name.length());
+            for (size_t i = 0; i < Unit::configurations(); i++)
+                rate_width = max(rate_width, to_string(unit->aging_rate(i)).length());
+        }
+        for (const shared_ptr<Unit>& unit: units)
+        {
+            cout << left << setw(name_width) << unit->name << " | ";
+            for (size_t i = 0; i < Unit::configurations(); i++)
+            {
+                cout << right << setw(rate_width) << (unit->aging_rate(i) == 0 ? f : to_string(unit->aging_rate(i)));
+                if (i != Unit::configurations() - 1)
+                    cout << " | ";
+            }
+            cout << endl;
+        }
     }
 
     // Monte Carlo sim to get overall failure distribution

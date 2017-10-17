@@ -18,10 +18,16 @@
 #include "trace.hh"
 #include "unit.hh"
 
+using namespace pugi;
 using namespace std;
 
+inline bool node_is(const xml_node& node, const string& type)
+{
+    return strcmp(node.attribute("type").value(), type.c_str()) == 0;
+}
+
 // Assumes time is already in seconds
-double convert_time(double time, const string& units)
+inline double convert_time(double time, const string& units)
 {
     if (units == "seconds")
         return time;
@@ -48,7 +54,6 @@ double convert_time(double time, const string& units)
 
 int main(int argc, char* argv[])
 {
-    using namespace pugi;
     using namespace TCLAP;
 
     int n;
@@ -91,8 +96,12 @@ int main(int argc, char* argv[])
     vector<shared_ptr<Unit>> units;
     for (const xml_node& child: doc.children("unit"))
     {
-        if (strcmp(child.name(), "unit") == 0)
+        if (node_is(child, "unit"))
             units.push_back(make_shared<Unit>(child, units.size(), n));
+        else if (node_is(child, "core"))
+            units.push_back(make_shared<Core>(child, units.size(), n));
+        else if (node_is(child, "logic"))
+            units.push_back(make_shared<Logic>(child, units.size(), n));
         else
         {
             cerr << "unknown unit type \"" << child.name() << '"' << endl;

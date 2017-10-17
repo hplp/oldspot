@@ -14,6 +14,9 @@
 #include <utility>
 #include <vector>
 
+namespace oldspot
+{
+
 using namespace std;
 
 ostream& operator<<(ostream& stream, const DataPoint& point)
@@ -67,3 +70,5 @@ vector<DataPoint> parseTrace(const string fname, char delimiter)
 
     return trace;
 }
+
+} // namespace oldspot

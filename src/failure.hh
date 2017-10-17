@@ -8,6 +8,9 @@
 #include "reliability.hh"
 #include "trace.hh"
 
+namespace oldspot
+{
+
 class FailureMechanism
 {
   public:
@@ -57,6 +60,8 @@ class NBTI : public FailureMechanism
     double timeToFailure(const DataPoint& data, double fail=std::numeric_limits<double>::signaling_NaN()) const override;
     WeibullDistribution distribution(const std::vector<MTTFSegment>& mttfs) const override;
 };
+
+} // namespace oldspot
 
 /*
  * [1] PTM

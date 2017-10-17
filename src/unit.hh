@@ -14,6 +14,9 @@
 #include "reliability.hh"
 #include "trace.hh"
 
+namespace oldspot
+{
+
 class Component
 {
   public:
@@ -114,3 +117,5 @@ class Group : public Component
     bool failed() const;
     std::ostream& dump(std::ostream& ostream) const override;
 };
+
+} // namespace oldspot

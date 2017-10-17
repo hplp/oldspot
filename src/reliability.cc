@@ -9,6 +9,9 @@
 #include <stdexcept>
 #include <vector>
 
+namespace oldspot
+{
+
 using namespace std;
 
 WeibullDistribution::WeibullDistribution(double b, const vector<MTTFSegment>& mttfs)
@@ -45,6 +48,8 @@ WeibullDistribution& WeibullDistribution::operator=(const WeibullDistribution& o
     beta = other.beta;
     return *this;
 }
+
+} // namespace oldspot
 
 /*
  * [1] Y. Xiang, T. Chantem, R. P. Dick, X. S. Hu and L. Shang, "System-

@@ -19,6 +19,9 @@
 #include "reliability.hh"
 #include "trace.hh"
 
+namespace oldspot
+{
+
 using namespace pugi;
 using namespace std;
 
@@ -206,3 +209,5 @@ ostream& Group::dump(ostream& stream) const
 {
     return stream << name << '(' << _children.size() << " children,failures=" << failures << ')';
 }
+
+} // namespace oldspot

@@ -18,6 +18,7 @@
 #include "trace.hh"
 #include "unit.hh"
 
+using namespace oldspot;
 using namespace pugi;
 using namespace std;
 

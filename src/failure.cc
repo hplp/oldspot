@@ -9,6 +9,9 @@
 #include "reliability.hh"
 #include "trace.hh"
 
+namespace oldspot
+{
+
 using namespace std;
 
 double NBTI::degradation(double t, double vdd, double dVth, double temperature, double duty_cycle) const
@@ -55,3 +58,5 @@ WeibullDistribution NBTI::distribution(const vector<MTTFSegment>& mttfs) const
 {
     return WeibullDistribution(beta, mttfs);
 }
+
+} // namespace oldspot

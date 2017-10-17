@@ -3,6 +3,9 @@
 #include <cmath>
 #include <vector>
 
+namespace oldspot
+{
+
 struct MTTFSegment
 {
     double duration;
@@ -30,3 +33,5 @@ class WeibullDistribution
     WeibullDistribution& operator=(const WeibullDistribution& other);
     WeibullDistribution& operator*=(const WeibullDistribution& other) { return *this = (*this)*other; }
 };
+
+} // namespace oldspot

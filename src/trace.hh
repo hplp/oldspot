@@ -9,6 +9,9 @@
 #include <utility>
 #include <vector>
 
+namespace oldspot
+{
+
 struct DataPoint
 {
     double time;
@@ -19,3 +22,5 @@ struct DataPoint
 };
 
 std::vector<DataPoint> parseTrace(const std::string fname, char delimiter=',');
+
+} // namespace oldspot

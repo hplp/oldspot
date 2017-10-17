@@ -46,7 +46,7 @@ void Unit::add_configuration(uint64_t config)
 void Unit::set_configuration(const vector<shared_ptr<Unit>>& units)
 {
     uint64_t config = accumulate(units.begin(), units.end(), 0,
-                                 [](uint64_t a, const shared_ptr<Unit>& b){ return (a << 1) | (b->failed() ? 1 : 0); });
+                                 [](uint64_t a, const shared_ptr<Unit>& b){ return a | ((b->failed() ? 1 : 0) << b->id); });
     index = trace_indices.at(config);
 }
 
@@ -171,9 +171,11 @@ Group::Group(const xml_node& node, vector<shared_ptr<Unit>>& units, size_t n)
             _children.push_back(make_shared<Group>(child, units, n));
         else if (strcmp(child.name(), "unit") == 0)
         {
-            shared_ptr<Unit> unit = make_shared<Unit>(child, units.size(), n);
-            units.push_back(unit);
-            _children.push_back(unit);
+            string n = child.attribute("name").value();
+            auto unit = find_if(units.begin(), units.end(),
+                                [&](const shared_ptr<Unit>& u){ return u->name == n; });
+            if (unit != units.end())
+                _children.push_back(*unit);
         }
         else
         {

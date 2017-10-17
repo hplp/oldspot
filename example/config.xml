@@ -1,22 +1,30 @@
 <?xml version="1.0" ?>
 
-<group name="system" failures="1">
-    <unit type="unit" name="one">
-        <default vdd="1" />
-        <default temperature="300" />
-        <default frequency="2000" />
-        <default peak_power="0.1" />
-        <trace file="example/one.trace" />
-        <trace file="example/fail.trace" />
-        <trace file="example/fail.trace" />
-    </unit>
-    <unit type="unit" name="two">
-        <default vdd="1" />
-        <default temperature="300" />
-        <default frequency="2000" />
-        <default peak_power="0.1" />
-        <trace file="example/two.trace" />
-        <trace file="example/fail.trace" />
-        <trace file="example/fail.trace" />
-    </unit>
+<unit type="unit" name="core">
+    <default vdd="1" />
+    <default temperature="300" />
+    <default frequency="2000" />
+    <default peak_power="0.1" />
+    <trace file="example/one.trace" />
+    <trace file="example/fail.trace" />
+    <trace file="example/fail.trace" />
+</unit>
+<unit type="unit" name="accel">
+    <default vdd="1" />
+    <default temperature="300" />
+    <default frequency="2000" />
+    <default peak_power="0.1" />
+    <trace file="example/two.trace" />
+    <trace file="example/fail.trace" />
+    <trace file="example/fail.trace" />
+</unit>
+
+<group name="system" failures="0">
+    <group name="a" failures="1">
+        <unit name="core" />
+        <unit name="accel" />
+    </group>
+    <group name="b" failures="0">
+        <unit name="core" />
+    </group>
 </group>

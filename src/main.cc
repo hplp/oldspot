@@ -89,7 +89,17 @@ int main(int argc, char* argv[])
     }
 
     vector<shared_ptr<Unit>> units;
-    shared_ptr<Component> root = make_shared<Group>(doc, units, n);
+    for (const xml_node& child: doc.children("unit"))
+    {
+        if (strcmp(child.name(), "unit") == 0)
+            units.push_back(make_shared<Unit>(child, units.size(), n));
+        else
+        {
+            cerr << "unknown unit type \"" << child.name() << '"' << endl;
+            exit(1);
+        }
+    }
+    shared_ptr<Component> root = make_shared<Group>(doc.child("group"), units, n);
 
     vector<shared_ptr<FailureMechanism>> mechanisms = {NBTI::model()};
     for (const shared_ptr<Unit>& unit: units)

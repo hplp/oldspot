@@ -50,22 +50,14 @@ void Unit::set_configuration(const vector<shared_ptr<Unit>>& units)
     index = trace_indices.at(config);
 }
 
-Unit::Unit(const xml_node& node, unsigned int i, size_t n)
+Unit::Unit(const xml_node& node, unsigned int i, size_t n, map<string, double> defaults)
     : Component(node.attribute("name").value(), n),
-      peak_power(0), _failed(false), id(i), current_reliability(1)
+      _failed(false), id(i), current_reliability(1)
 {
-    map<string, double> defaults = {{"vdd", 1}, {"temperature", 350}, {"frequency", 1000}};
     for (const xml_node& def: node.children("default"))
-    {
-        if (def.attribute("vdd"))
-            defaults["vdd"] = def.attribute("vdd").as_double();
-        if (def.attribute("temperature"))
-            defaults["temperature"] = def.attribute("temperature").as_double();
-        if (def.attribute("frequency"))
-            defaults["frequency"] = def.attribute("frequency").as_double();
-        if (def.attribute("peak_power"))
-            peak_power = def.attribute("peak_power").as_double();
-    }
+        for (auto& value: defaults)
+            if (def.attribute(value.first.c_str()))
+                value.second = def.attribute(value.first.c_str()).as_double();
 
     if (node.child("trace"))
     {
@@ -103,7 +95,6 @@ void Unit::reset()
 double Unit::activity(const DataPoint& data) const
 {
     // (cycles where unit is active)/(cycles of time step)
-    // (runtime power)/(peak power)
     // For NBTI in an SRAM, this is data-dependent rather than usage-dependent
     return data.data.at("activity");
 }
@@ -160,6 +151,11 @@ bool Unit::failed_in_trace(int i) const
 ostream& Unit::dump(ostream& stream) const
 {
     return stream << name;
+}
+
+double Core::activity(const DataPoint& data) const
+{
+    return data.data.at("power")/data.data.at("peak_power");
 }
 
 Group::Group(const xml_node& node, vector<shared_ptr<Unit>>& units, size_t n)

@@ -53,7 +53,6 @@ class Unit : public Component
     static std::map<uint64_t, int> trace_indices;
 
   protected:
-    double peak_power;  // W
     bool _failed;
 
     std::vector<std::vector<DataPoint>> traces;
@@ -70,7 +69,8 @@ class Unit : public Component
     const unsigned int id;
     double current_reliability;
 
-    Unit(const pugi::xml_node& node, unsigned int i, size_t n=1);
+    Unit(const pugi::xml_node& node, unsigned int i, size_t n=1,
+         std::map<std::string, double> defaults={{"vdd", 1}, {"temperature", 350}, {"frequency", 1000}});
     std::vector<std::shared_ptr<Component>>& children() override;
     void reset();
     virtual double activity(const DataPoint& data) const;
@@ -85,6 +85,15 @@ class Unit : public Component
     bool failed() const { return _failed; }
     void failed(bool f) { _failed = f; }
     virtual std::ostream& dump(std::ostream& stream) const override;
+};
+
+class Core : public Unit
+{
+  public:
+    Core(const pugi::xml_node& node, unsigned int i, size_t n=1,
+         std::map<std::string, double> defaults={{"vdd", 1}, {"temperature", 350}, {"frequency", 1000}, {"power", 1}, {"peak_power", 1}})
+        : Unit(node, i, n, defaults) {}
+    double activity(const DataPoint& data) const override;
 };
 
 class Group : public Component

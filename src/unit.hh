@@ -70,7 +70,7 @@ class Unit : public Component
     double current_reliability;
 
     Unit(const pugi::xml_node& node, unsigned int i, size_t n=1,
-         std::map<std::string, double> defaults={{"vdd", 1}, {"temperature", 350}, {"frequency", 1000}});
+         std::map<std::string, double> defaults={});
     std::vector<std::shared_ptr<Component>>& children() override;
     void reset();
     virtual double activity(const DataPoint& data) const;
@@ -90,9 +90,8 @@ class Unit : public Component
 class Core : public Unit
 {
   public:
-    Core(const pugi::xml_node& node, unsigned int i, size_t n=1,
-         std::map<std::string, double> defaults={{"vdd", 1}, {"temperature", 350}, {"frequency", 1000}, {"power", 1}, {"peak_power", 1}})
-        : Unit(node, i, n, defaults) {}
+    Core(const pugi::xml_node& node, unsigned int i, size_t n=1)
+        : Unit(node, i, n, {{"power", 1}, {"peak_power", 1}}) {}
     double activity(const DataPoint& data) const override;
 };
 

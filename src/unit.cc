@@ -54,6 +54,15 @@ Unit::Unit(const xml_node& node, unsigned int i, size_t n, map<string, double> d
     : Component(node.attribute("name").value(), n),
       _failed(false), id(i), current_reliability(1)
 {
+    if (defaults.count("vdd") == 0)
+        defaults["vdd"] = 1;
+    if (defaults.count("temperature") == 0)
+        defaults["temperature"] = 350;
+    if (defaults.count("frequency") == 0)
+        defaults["frequency"] = 1000;
+    if (defaults.count("activity") == 0)
+        defaults["activity"] = 0;
+
     for (const xml_node& def: node.children("default"))
         for (auto& value: defaults)
             if (def.attribute(value.first.c_str()))

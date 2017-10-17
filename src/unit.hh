@@ -96,6 +96,13 @@ class Core : public Unit
     double activity(const DataPoint& data) const override;
 };
 
+class Logic : public Unit
+{
+  public:
+    Logic(const pugi::xml_node& node, unsigned int i, size_t n=1) : Unit(node, i, n) {}
+    double activity(const DataPoint& data) const override;
+};
+
 class Group : public Component
 {
   private:

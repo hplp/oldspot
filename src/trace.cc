@@ -48,6 +48,7 @@ vector<DataPoint> parseTrace(const string fname, char delimiter)
         quantities.push_back(token);
 
     // Parse times (first column) and values
+    double prev = 0;
     while (getline(file, line))
     {
         stream.str(line);
@@ -60,7 +61,8 @@ vector<DataPoint> parseTrace(const string fname, char delimiter)
             getline(stream, token, delimiter);
             data[quantity] = stod(token);
         }
-        trace.push_back({time, data});
+        trace.push_back({time, time - prev, data});
+        prev = time;
     }
 
     return trace;

@@ -71,7 +71,7 @@ Unit::Unit(const xml_node& node, unsigned int i, size_t n, map<string, double> d
         }
     }
     else
-        traces.push_back({{1, defaults}});
+        traces.push_back({{1, 1, defaults}});
     for (vector<DataPoint>& trace: traces)
         for (DataPoint& data: trace)
             data.data["frequency"] *= 1e6; // Expecting MHz; convert to Hz
@@ -156,6 +156,11 @@ ostream& Unit::dump(ostream& stream) const
 double Core::activity(const DataPoint& data) const
 {
     return data.data.at("power")/data.data.at("peak_power");
+}
+
+double Logic::activity(const DataPoint& data) const
+{
+    return data.data.at("activity")/(data.duration*data.data.at("frequency"));
 }
 
 Group::Group(const xml_node& node, vector<shared_ptr<Unit>>& units, size_t n)

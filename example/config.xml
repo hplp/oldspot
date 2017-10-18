@@ -4,7 +4,6 @@
     <default vdd="1" />
     <default temperature="300" />
     <default frequency="2000" />
-    <default peak_power="0.1" />
     <trace file="example/one.trace" />
     <trace file="example/fail.trace" />
     <trace file="example/fail.trace" />
@@ -13,7 +12,6 @@
     <default vdd="1" />
     <default temperature="300" />
     <default frequency="2000" />
-    <default peak_power="0.1" />
     <trace file="example/two.trace" />
     <trace file="example/fail.trace" />
     <trace file="example/fail.trace" />

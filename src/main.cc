@@ -194,9 +194,9 @@ int main(int argc, char* argv[])
     }
 
     cout << "MTTFs:" << endl;
-    Component::walk(root, [&](const shared_ptr<Component>& c) {
-        cout << c->name << ": " << convert_time(c->mttf(), time_units) << endl;
-    });
+    cout << root->name << ": " << convert_time(root->mttf(), time_units) << endl;
+    for (const shared_ptr<Unit>& unit: units)
+        cout << unit->name << ": " << convert_time(unit->mttf(), time_units) << endl;
 
     return 0;
 }

@@ -4,6 +4,7 @@
     <default vdd="1" />
     <default temperature="300" />
     <default frequency="2000" />
+    <redundancy type="serial" count="1" />
     <trace file="example/one.trace" />
     <trace file="example/fail.trace" />
     <trace file="example/fail.trace" />
@@ -12,6 +13,7 @@
     <default vdd="1" />
     <default temperature="300" />
     <default frequency="2000" />
+    <redundancy type="serial" count="1" />
     <trace file="example/two.trace" />
     <trace file="example/fail.trace" />
     <trace file="example/fail.trace" />

@@ -76,17 +76,23 @@ class Unit : public Component
          std::map<std::string, double> defaults={});
     std::vector<std::shared_ptr<Component>>& children() override;
     void reset();
+
     virtual double activity(const DataPoint& data) const;
     void computeReliability(const std::vector<std::shared_ptr<FailureMechanism>>& mechanisms);
+
     double aging_rate(int i) const;
     double aging_rate() const { return aging_rate(index); }
+
     double reliability(double t) const { return reliability(index, t); }
     virtual double reliability(int i, double t) const;
+
     double inverse(double r) const { return inverse(index, r); }
     virtual double inverse(int i, double r) const;
+
     bool failed_in_trace(int i) const;
     bool failed() const { return _failed; }
     void failed(bool f) { _failed = f; }
+
     virtual std::ostream& dump(std::ostream& stream) const override;
 };
 

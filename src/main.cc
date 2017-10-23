@@ -115,13 +115,7 @@ int main(int argc, char* argv[])
     for (const shared_ptr<Unit>& unit: units)
         unit->computeReliability(mechanisms);
 
-    for (uint64_t i = 0; i < (1ULL << units.size()); i++)
-    {
-        for (const shared_ptr<Unit>& unit: units)
-            unit->failed((i&(1 << unit->id)) != 0);
-        if (!root->failed())
-            Unit::add_configuration(i);
-    }
+    Unit::init_configurations(root, units);
     if (print_rates)
     {
         const string f = "(failed)";
@@ -182,9 +176,11 @@ int main(int argc, char* argv[])
                 }
             }
             total_time += fail_time;
-            failed->failed(true);
+            failed->add_failure();
             for (const shared_ptr<Unit>& unit: units)
                 unit->current_reliability = unit->reliability(fail_time + t_eq_prev);
+            if (failed->serial())
+                failed->current_reliability = 1;
             
             Component::walk(root, [&](const shared_ptr<Component>& c) {
                 if (c->failed())

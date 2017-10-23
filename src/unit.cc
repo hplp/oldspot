@@ -41,9 +41,15 @@ map<uint64_t, int> Unit::trace_indices;
 
 char Unit::delim = ',';
 
-void Unit::add_configuration(uint64_t config)
+void Unit::init_configurations(const shared_ptr<Component>& root, vector<shared_ptr<Unit>>& units)
 {
-    trace_indices[config] = index++;
+    for (uint64_t i = 0; i < (1ULL << units.size()); i++)
+    {
+        for (const shared_ptr<Unit>& unit: units)
+            unit->_failed = (i&(1 << unit->id)) != 0;
+        if (!root->failed())
+            trace_indices[i] = index++;
+    }
 }
 
 void Unit::set_configuration(const vector<shared_ptr<Unit>>& units)
@@ -55,7 +61,7 @@ void Unit::set_configuration(const vector<shared_ptr<Unit>>& units)
 
 Unit::Unit(const xml_node& node, unsigned int i, size_t n, map<string, double> defaults)
     : Component(node.attribute("name").value(), n),
-      _failed(false), id(i), current_reliability(1)
+      _failed(false), _serial(true), copies(1), remaining(1), id(i), current_reliability(1)
 {
     if (defaults.count("vdd") == 0)
         defaults["vdd"] = 1;
@@ -70,6 +76,13 @@ Unit::Unit(const xml_node& node, unsigned int i, size_t n, map<string, double> d
         for (auto& value: defaults)
             if (def.attribute(value.first.c_str()))
                 value.second = def.attribute(value.first.c_str()).as_double();
+
+    if (node.child("redundancy"))
+    {
+        const xml_node& redundancy = node.child("redundancy");
+        _serial = strcmp(redundancy.attribute("type").value(), "serial") == 0;
+        copies = remaining = redundancy.attribute("count").as_int();
+    }
 
     if (node.child("trace"))
     {
@@ -101,6 +114,7 @@ vector<shared_ptr<Component>>& Unit::children()
 void Unit::reset()
 {
     _failed = false;
+    remaining = copies;
     current_reliability = 1;
 }
 

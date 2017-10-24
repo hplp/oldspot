@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <cstring>
+#include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <limits>
@@ -11,6 +12,7 @@
 #include <random>
 #include <string>
 #include <tclap/CmdLine.h>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -98,18 +100,18 @@ int main(int argc, char* argv[])
     for (const xml_node& child: doc.children("unit"))
     {
         if (node_is(child, "unit"))
-            units.push_back(make_shared<Unit>(child, units.size(), n));
+            units.push_back(make_shared<Unit>(child, units.size()));
         else if (node_is(child, "core"))
-            units.push_back(make_shared<Core>(child, units.size(), n));
+            units.push_back(make_shared<Core>(child, units.size()));
         else if (node_is(child, "logic"))
-            units.push_back(make_shared<Logic>(child, units.size(), n));
+            units.push_back(make_shared<Logic>(child, units.size()));
         else
         {
             cerr << "unknown unit type \"" << child.name() << '"' << endl;
             exit(1);
         }
     }
-    shared_ptr<Component> root = make_shared<Group>(doc.child("group"), units, n);
+    shared_ptr<Component> root = make_shared<Group>(doc.child("group"), units);
 
     vector<shared_ptr<FailureMechanism>> mechanisms = {NBTI::model()};
     for (const shared_ptr<Unit>& unit: units)
@@ -147,18 +149,16 @@ int main(int argc, char* argv[])
     mt19937 gen(dev());
     for (int i = 0; i < n; i++)
     {
+        unordered_set<shared_ptr<Component>> failed_components;
         double total_time = 0;
         double fail_time = 0;
         double t_eq_prev = 0;
         for (shared_ptr<Unit>& unit: units)
             unit->reset();
-        Component::walk(root, [&](const shared_ptr<Component>& c){
-            c->ttfs[i] = numeric_limits<double>::infinity();
-        });
         while (!root->failed())
         {
-            Unit::set_configuration(units);
             shared_ptr<Unit> failed = nullptr;
+            Unit::set_configuration(units);
             for (const shared_ptr<Unit>& unit: units)
             {
                 if (!unit->failed())
@@ -181,16 +181,15 @@ int main(int argc, char* argv[])
                 unit->current_reliability = unit->reliability(fail_time + t_eq_prev);
             if (failed->serial())
                 failed->current_reliability = 1;
-            
-            Component::walk(root, [&](const shared_ptr<Component>& c) {
-                if (c->failed())
-                    c->ttfs[i] = min(c->ttfs[i], total_time);
+
+            Component::walk(root, [&](shared_ptr<Component>& c) {
+                if (c->failed() && failed_components.count(c) == 0)
+                {
+                    c->ttfs.push_back(total_time);
+                    failed_components.insert(c);
+                }
             });
         }
-        Component::walk(root, [&](const shared_ptr<Component>& c) {
-            if (isinf(c->ttfs[i]))
-                c->ttfs[i] = root->ttfs[i];
-        });
     }
 
     cout << "MTTFs:" << endl;

@@ -40,7 +40,7 @@ class Component
     const std::string name;
     std::vector<double> ttfs;
 
-    Component(const std::string _n, size_t n=1) : name(_n) { ttfs.resize(n); }
+    Component(const std::string _n) : name(_n) {}
     virtual std::vector<std::shared_ptr<Component>>& children() = 0;
     virtual double mttf() const;
     virtual bool failed() const = 0;
@@ -75,8 +75,7 @@ class Unit : public Component
     const unsigned int id;
     double current_reliability;
 
-    Unit(const pugi::xml_node& node, unsigned int i, size_t n=1,
-         std::map<std::string, double> defaults={});
+    Unit(const pugi::xml_node& node, unsigned int i, std::map<std::string, double> defaults={});
     std::vector<std::shared_ptr<Component>>& children() override;
     bool serial() const { return _serial; }
     void reset();
@@ -103,15 +102,15 @@ class Unit : public Component
 class Core : public Unit
 {
   public:
-    Core(const pugi::xml_node& node, unsigned int i, size_t n=1)
-        : Unit(node, i, n, {{"power", 1}, {"peak_power", 1}}) {}
+    Core(const pugi::xml_node& node, unsigned int i)
+        : Unit(node, i, {{"power", 1}, {"peak_power", 1}}) {}
     double activity(const DataPoint& data) const override;
 };
 
 class Logic : public Unit
 {
   public:
-    Logic(const pugi::xml_node& node, unsigned int i, size_t n=1) : Unit(node, i, n) {}
+    Logic(const pugi::xml_node& node, unsigned int i) : Unit(node, i) {}
     double activity(const DataPoint& data) const override;
 };
 
@@ -122,7 +121,7 @@ class Group : public Component
     std::vector<std::shared_ptr<Component>> _children;
 
   public:
-    Group(const pugi::xml_node& node, std::vector<std::shared_ptr<Unit>>& units, size_t n=1);
+    Group(const pugi::xml_node& node, std::vector<std::shared_ptr<Unit>>& units);
     std::vector<std::shared_ptr<Component>>& children() override { return _children; }
     bool failed() const;
     std::ostream& dump(std::ostream& ostream) const override;

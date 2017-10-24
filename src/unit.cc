@@ -59,8 +59,8 @@ void Unit::set_configuration(const vector<shared_ptr<Unit>>& units)
     index = trace_indices.at(config);
 }
 
-Unit::Unit(const xml_node& node, unsigned int i, size_t n, map<string, double> defaults)
-    : Component(node.attribute("name").value(), n),
+Unit::Unit(const xml_node& node, unsigned int i, map<string, double> defaults)
+    : Component(node.attribute("name").value()),
       _failed(false), _serial(true), copies(1), remaining(1), id(i), current_reliability(1)
 {
     if (defaults.count("vdd") == 0)
@@ -189,13 +189,13 @@ double Logic::activity(const DataPoint& data) const
     return data.data.at("activity")/(data.duration*data.data.at("frequency"));
 }
 
-Group::Group(const xml_node& node, vector<shared_ptr<Unit>>& units, size_t n)
-    : Component(node.attribute("name").value(), n), failures(node.attribute("failures").as_int())
+Group::Group(const xml_node& node, vector<shared_ptr<Unit>>& units)
+    : Component(node.attribute("name").value()), failures(node.attribute("failures").as_int())
 {
     for (const xml_node& child: node.children())
     {
         if (strcmp(child.name(), "group") == 0)
-            _children.push_back(make_shared<Group>(child, units, n));
+            _children.push_back(make_shared<Group>(child, units));
         else if (strcmp(child.name(), "unit") == 0)
         {
             string n = child.attribute("name").value();

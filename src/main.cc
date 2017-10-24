@@ -207,8 +207,19 @@ int main(int argc, char* argv[])
     {
         ofstream dist(dist_file);
         if (dist)
-            for (const double& ttf: root->ttfs)
-                dist << ttf << endl;
+        {
+            dist << root->name;
+            for (double ttf: root->ttfs)
+                dist << ',' << ttf;
+            dist << endl;
+            for (const shared_ptr<Unit>& unit: units)
+            {
+                dist << unit->name;
+                for (double ttf: unit->ttfs)
+                    dist << ',' << ttf;
+                dist << endl;
+            }
+        }
     }
 
     return 0;

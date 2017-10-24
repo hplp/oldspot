@@ -61,7 +61,7 @@ int main(int argc, char* argv[])
 
     int n;
     bool print_rates;
-    string time_units;
+    string time_units, dist_file;
     xml_document doc;
 
     try
@@ -74,6 +74,7 @@ int main(int argc, char* argv[])
         ValueArg<char> delimiter("", "trace-delimiter", "One-character delimiter for data in input trace files (default: ,)", false, ',', "delim", cmd);
         ValueArg<string> time("", "time-units", "Units for displaying time to failure (default: hours)", false, "hours", &unit_values, cmd);
         ValueArg<int> iterations("n", "iterations", "Number of Monte-Carlo iterations to perform (default: 1000)", false, 1000, "iterations", cmd);
+        ValueArg<string> dist_dump("", "dump-ttfs", "Dump time-to-failure distribution to file", false, "", "filename", cmd);
         UnlabeledValueArg<string> config("chip-config", "File containing chip configuration", true, "", "filename", cmd);
         cmd.parse(argc, argv);
 
@@ -89,6 +90,7 @@ int main(int argc, char* argv[])
         n = iterations.getValue();
         time_units = time.getValue();
         print_rates = rates.getValue();
+        dist_file = dist_dump.getValue();
     }
     catch (ArgException& e)
     {
@@ -196,6 +198,14 @@ int main(int argc, char* argv[])
     cout << root->name << ": " << convert_time(root->mttf(), time_units) << endl;
     for (const shared_ptr<Unit>& unit: units)
         cout << unit->name << ": " << convert_time(unit->mttf(), time_units) << endl;
+
+    if (!dist_file.empty())
+    {
+        ofstream dist(dist_file);
+        if (dist)
+            for (const double& ttf: root->ttfs)
+                dist << ttf << endl;
+    }
 
     return 0;
 }

@@ -27,7 +27,25 @@ using namespace std;
 
 double Component::mttf() const
 {
-    return accumulate(ttfs.begin(), ttfs.end(), 0.0)/ttfs.size();
+    if (ttfs.empty())
+        return numeric_limits<double>::quiet_NaN();
+    else
+        return accumulate(ttfs.begin(), ttfs.end(), 0.0)/ttfs.size();
+}
+
+// confidence is reserved until a good implementation of Student's t distribution can be found
+// right now, the confidence interval is always 95%
+pair<double, double> Component::mttf_interval(double confidence) const
+{
+    if (ttfs.size() <= 1)
+        return {numeric_limits<double>::quiet_NaN(), numeric_limits<double>::quiet_NaN()};
+    else
+    {
+        double mean = mttf();
+        double s = sqrt(accumulate(ttfs.begin(), ttfs.end(), 0.0,
+                                   [&](double a, double b){ return a + pow(b - mean, 2); })/(ttfs.size() - 1));
+        return {mean - 1.96*s/sqrt(ttfs.size()), mean + 1.96*s/sqrt(ttfs.size())};
+    }
 }
 
 ostream& operator<<(ostream& stream, const Component& c)

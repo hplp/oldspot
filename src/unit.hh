@@ -8,6 +8,7 @@
 #include <pugixml.hpp>
 #include <stack>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "failure.hh"
@@ -43,6 +44,7 @@ class Component
     Component(const std::string _n) : name(_n) {}
     virtual std::vector<std::shared_ptr<Component>>& children() = 0;
     virtual double mttf() const;
+    virtual std::pair<double, double> mttf_interval(double confidence=0.95) const;
     virtual bool failed() const = 0;
 
     virtual std::ostream& dump(std::ostream& stream) const = 0;

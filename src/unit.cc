@@ -156,7 +156,7 @@ double Unit::aging_rate(int i) const
 
 double Unit::reliability(int i, double t) const
 {
-    return overall_reliabilities[i].reliability(t);
+    return overall_reliabilities[i](t);
 }
 
 double Unit::inverse(int i, double r) const

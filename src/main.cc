@@ -158,24 +158,24 @@ int main(int argc, char* argv[])
         {
             Unit::set_configuration(units);
 
-            double dt_fail = numeric_limits<double>::infinity();
+            double dt_event = numeric_limits<double>::infinity();
             shared_ptr<Unit> failed;
             for (const shared_ptr<Unit>& unit: healthy)
             {
                 double dt = unit->get_next_event();
-                if (dt_fail > dt)
+                if (dt_event > dt)
                 {
                     failed = unit;
-                    dt_fail = dt;
+                    dt_event = dt;
                 }
             }
             
             for (const shared_ptr<Unit>& unit: healthy)
-                unit->update_reliability(dt_fail);
+                unit->update_reliability(dt_event);
             failed->failure();
             if (failed->failed())
                 healthy.erase(healthy.find(failed));
-            t += dt_fail;
+            t += dt_event;
 
             Component::walk(root, [&](const shared_ptr<Component>& c) {
                 if (c->failed() && failed_components.count(c) == 0)

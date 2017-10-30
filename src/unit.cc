@@ -78,7 +78,7 @@ void Unit::set_configuration(const vector<shared_ptr<Unit>>& units)
 
 Unit::Unit(const xml_node& node, unsigned int i, map<string, double> defaults)
     : Component(node.attribute("name").value()),
-      _failed(false), serial(true), copies(1), remaining(1), id(i), current_reliability(1)
+      age(0), copies(1), _current_reliability(1), _failed(false), remaining(1), serial(true), id(i)
 {
     if (defaults.count("vdd") == 0)
         defaults["vdd"] = 1;
@@ -130,17 +130,24 @@ vector<shared_ptr<Component>>& Unit::children()
 
 void Unit::reset()
 {
+    age = 0;
+    _current_reliability = 1;
     _failed = false;
     remaining = copies;
-    current_reliability = 1;
 }
 
 double Unit::get_next_event() const
 {
     static random_device dev;
     static mt19937 gen(dev());
-    uniform_real_distribution<double> r(0, current_reliability);
-    return inverse(r(gen)) - inverse(current_reliability);
+    uniform_real_distribution<double> r(0, _current_reliability);
+    return inverse(r(gen)) - inverse(_current_reliability);
+}
+
+void Unit::update_reliability(double t)
+{
+    age = t;
+    _current_reliability = reliability(t);
 }
 
 double Unit::activity(const DataPoint& data) const
@@ -203,7 +210,7 @@ void Unit::failure()
 {
     _failed = --remaining == 0;
     if (serial)
-        current_reliability = 1;
+        _current_reliability = 1;
 }
 
 ostream& Unit::dump(ostream& stream) const

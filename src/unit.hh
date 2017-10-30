@@ -57,10 +57,12 @@ class Unit : public Component
     static int index;
     static std::map<uint64_t, int> trace_indices;
 
-    bool _failed;
-    bool serial;
+    double age;
     int copies;
+    double _current_reliability;
+    bool _failed;
     int remaining;
+    bool serial;
 
   protected:
 
@@ -76,12 +78,13 @@ class Unit : public Component
     static size_t configurations() { return trace_indices.size(); }
 
     const unsigned int id;
-    double current_reliability;
 
     Unit(const pugi::xml_node& node, unsigned int i, std::map<std::string, double> defaults={});
     std::vector<std::shared_ptr<Component>>& children() override;
     void reset();
     double get_next_event() const;
+    void update_reliability(double dt);
+    double current_reliability() const { return _current_reliability; }
 
     virtual double activity(const DataPoint& data) const;
     void computeReliability(const std::vector<std::shared_ptr<FailureMechanism>>& mechanisms);

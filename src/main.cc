@@ -175,7 +175,7 @@ int main(int argc, char* argv[])
             if (failed->failed())
                 healthy.erase(healthy.find(failed));
             for (const shared_ptr<Unit>& unit: healthy)
-                unit->current_reliability = unit->reliability(dt_fail + failed->inverse(failed->current_reliability));
+                unit->update_reliability(dt_fail + failed->inverse(failed->current_reliability()));
 
             Component::walk(root, [&](const shared_ptr<Component>& c) {
                 if (c->failed() && failed_components.count(c) == 0)

@@ -147,47 +147,40 @@ int main(int argc, char* argv[])
     }
 
     // Monte Carlo sim to get overall failure distribution
-    random_device dev;
-    mt19937 gen(dev());
     for (int i = 0; i < n; i++)
     {
         unordered_set<shared_ptr<Component>> failed_components;
-        double total_time = 0;
-        double fail_time = 0;
-        double t_eq_prev = 0;
+        unordered_set<shared_ptr<Unit>> healthy(units.begin(), units.end());
+        double t = 0;
         for (shared_ptr<Unit>& unit: units)
             unit->reset();
         while (!root->failed())
         {
-            shared_ptr<Unit> failed = nullptr;
             Unit::set_configuration(units);
-            for (const shared_ptr<Unit>& unit: units)
+
+            double dt_fail = numeric_limits<double>::infinity();
+            shared_ptr<Unit> failed;
+            for (const shared_ptr<Unit>& unit: healthy)
             {
-                if (!unit->failed())
+                double dt = unit->get_next_event();
+                if (dt_fail > dt)
                 {
-                    uniform_real_distribution<double> r(0, unit->current_reliability);
-                    double t = unit->inverse(r(gen));
-                    double t_eq = unit->inverse(unit->current_reliability);
-                    t -= t_eq;
-                    if (failed == nullptr || fail_time > t)
-                    {
-                        failed = unit;
-                        fail_time = t;
-                        t_eq_prev = t_eq;
-                    }
+                    failed = unit;
+                    dt_fail = dt;
                 }
             }
-            total_time += fail_time;
-            failed->add_failure();
-            for (const shared_ptr<Unit>& unit: units)
-                unit->current_reliability = unit->reliability(fail_time + t_eq_prev);
-            if (failed->serial())
-                failed->current_reliability = 1;
+            
+            t += dt_fail;
+            failed->failure();
+            if (failed->failed())
+                healthy.erase(healthy.find(failed));
+            for (const shared_ptr<Unit>& unit: healthy)
+                unit->current_reliability = unit->reliability(dt_fail + failed->inverse(failed->current_reliability));
 
-            Component::walk(root, [&](shared_ptr<Component>& c) {
+            Component::walk(root, [&](const shared_ptr<Component>& c) {
                 if (c->failed() && failed_components.count(c) == 0)
                 {
-                    c->ttfs.push_back(total_time);
+                    c->ttfs.push_back(t);
                     failed_components.insert(c);
                 }
             });

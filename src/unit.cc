@@ -11,6 +11,7 @@
 #include <memory>
 #include <numeric>
 #include <pugixml.hpp>
+#include <random>
 #include <utility>
 #include <vector>
 
@@ -54,9 +55,7 @@ ostream& operator<<(ostream& stream, const Component& c)
 }
 
 int Unit::index = 0;
-
 map<uint64_t, int> Unit::trace_indices;
-
 char Unit::delim = ',';
 
 void Unit::init_configurations(const shared_ptr<Component>& root, vector<shared_ptr<Unit>>& units)
@@ -79,7 +78,7 @@ void Unit::set_configuration(const vector<shared_ptr<Unit>>& units)
 
 Unit::Unit(const xml_node& node, unsigned int i, map<string, double> defaults)
     : Component(node.attribute("name").value()),
-      _failed(false), _serial(true), copies(1), remaining(1), id(i), current_reliability(1)
+      _failed(false), serial(true), copies(1), remaining(1), id(i), current_reliability(1)
 {
     if (defaults.count("vdd") == 0)
         defaults["vdd"] = 1;
@@ -98,7 +97,7 @@ Unit::Unit(const xml_node& node, unsigned int i, map<string, double> defaults)
     if (node.child("redundancy"))
     {
         const xml_node& redundancy = node.child("redundancy");
-        _serial = strcmp(redundancy.attribute("type").value(), "serial") == 0;
+        serial = strcmp(redundancy.attribute("type").value(), "serial") == 0;
         copies = remaining = redundancy.attribute("count").as_int();
     }
 
@@ -134,6 +133,14 @@ void Unit::reset()
     _failed = false;
     remaining = copies;
     current_reliability = 1;
+}
+
+double Unit::get_next_event() const
+{
+    static random_device dev;
+    static mt19937 gen(dev());
+    uniform_real_distribution<double> r(0, current_reliability);
+    return inverse(r(gen)) - inverse(current_reliability);
 }
 
 double Unit::activity(const DataPoint& data) const
@@ -190,6 +197,13 @@ bool Unit::failed_in_trace(int i) const
         return (result->first&(1 << id)) != 0;
     else
         return false;
+}
+
+void Unit::failure()
+{
+    _failed = --remaining == 0;
+    if (serial)
+        current_reliability = 1;
 }
 
 ostream& Unit::dump(ostream& stream) const

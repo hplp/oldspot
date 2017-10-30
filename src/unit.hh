@@ -57,11 +57,12 @@ class Unit : public Component
     static int index;
     static std::map<uint64_t, int> trace_indices;
 
-  protected:
     bool _failed;
-    bool _serial;
+    bool serial;
     int copies;
     int remaining;
+
+  protected:
 
     std::vector<std::vector<DataPoint>> traces;
     std::vector<std::map<std::shared_ptr<FailureMechanism>, WeibullDistribution>> reliabilities;
@@ -79,8 +80,8 @@ class Unit : public Component
 
     Unit(const pugi::xml_node& node, unsigned int i, std::map<std::string, double> defaults={});
     std::vector<std::shared_ptr<Component>>& children() override;
-    bool serial() const { return _serial; }
     void reset();
+    double get_next_event() const;
 
     virtual double activity(const DataPoint& data) const;
     void computeReliability(const std::vector<std::shared_ptr<FailureMechanism>>& mechanisms);
@@ -96,7 +97,7 @@ class Unit : public Component
 
     bool failed_in_trace(int i) const;
     bool failed() const { return _failed; }
-    void add_failure() { _failed = --remaining == 0; }
+    void failure();
 
     virtual std::ostream& dump(std::ostream& stream) const override;
 };

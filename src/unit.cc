@@ -54,12 +54,12 @@ ostream& operator<<(ostream& stream, const Component& c)
     return c.dump(stream);
 }
 
-int Unit::index = 0;
 map<uint64_t, int> Unit::trace_indices;
 char Unit::delim = ',';
 
 void Unit::init_configurations(const shared_ptr<Component>& root, vector<shared_ptr<Unit>>& units)
 {
+    static int index = 0;
     for (uint64_t i = 0; i < (1ULL << units.size()); i++)
     {
         for (const shared_ptr<Unit>& unit: units)
@@ -71,14 +71,17 @@ void Unit::init_configurations(const shared_ptr<Component>& root, vector<shared_
 
 void Unit::set_configuration(const vector<shared_ptr<Unit>>& units)
 {
+    for (const shared_ptr<Unit>& unit: units)
+        unit->prev_index = unit->index;
     uint64_t config = accumulate(units.begin(), units.end(), 0,
                                  [](uint64_t a, const shared_ptr<Unit>& b){ return a | ((b->failed() ? 1 : 0) << b->id); });
-    index = trace_indices.at(config);
+    for (const shared_ptr<Unit>& unit: units)
+        unit->index = trace_indices.at(config);
 }
 
 Unit::Unit(const xml_node& node, unsigned int i, map<string, double> defaults)
     : Component(node.attribute("name").value()),
-      age(0), copies(1), _current_reliability(1), _failed(false), remaining(1), serial(true), id(i)
+      age(0), copies(1), _current_reliability(1), _failed(false), remaining(1), serial(true), index(-1), prev_index(-1), id(i)
 {
     if (defaults.count("vdd") == 0)
         defaults["vdd"] = 1;
@@ -144,15 +147,16 @@ double Unit::get_next_event() const
     return inverse(r(gen)) - inverse(_current_reliability);
 }
 
-void Unit::update_reliability(double t)
+void Unit::update_reliability(double dt)
 {
-    age = t;
-    _current_reliability = reliability(t);
+    age += dt;
+    if (prev_index >= 0)
+        age -= inverse(prev_index, _current_reliability) - inverse(index, _current_reliability);
+    _current_reliability = reliability(age);
 }
 
 double Unit::activity(const DataPoint& data) const
 {
-    // (cycles where unit is active)/(cycles of time step)
     // For NBTI in an SRAM, this is data-dependent rather than usage-dependent
     return data.data.at("activity");
 }
@@ -210,7 +214,11 @@ void Unit::failure()
 {
     _failed = --remaining == 0;
     if (serial)
+    {
         _current_reliability = 1;
+        age = 0;
+        prev_index = -1;
+    }
 }
 
 ostream& Unit::dump(ostream& stream) const

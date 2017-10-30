@@ -54,7 +54,6 @@ class Component
 class Unit : public Component
 {
   private:
-    static int index;
     static std::map<uint64_t, int> trace_indices;
 
     double age;
@@ -63,6 +62,8 @@ class Unit : public Component
     bool _failed;
     int remaining;
     bool serial;
+    int index;
+    int prev_index;
 
   protected:
 

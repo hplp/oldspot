@@ -14,6 +14,16 @@ namespace oldspot
 
 using namespace std;
 
+WeibullDistribution WeibullDistribution::estimate(const std::vector<double> ttfs, double beta)
+{
+    WeibullDistribution dist;
+    dist.beta = beta;
+    dist.alpha = accumulate(ttfs.begin(), ttfs.end(), 0.0, [&](double a, double b){
+        return a + b*b;
+    })/ttfs.size();
+    return dist;
+}
+
 WeibullDistribution::WeibullDistribution(double b, const vector<MTTFSegment>& mttfs)
     : WeibullDistribution(1, b)
 {

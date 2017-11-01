@@ -19,6 +19,8 @@ class WeibullDistribution
     double beta;
 
   public:
+    static WeibullDistribution estimate(const std::vector<double>& ttfs, double beta=2);
+
     WeibullDistribution(double a, double b) : alpha(a), beta(b) {}
     WeibullDistribution() : WeibullDistribution(1, 1) {}
     WeibullDistribution(const WeibullDistribution& other) : WeibullDistribution(other.alpha, other.beta) {}

@@ -54,29 +54,47 @@ ostream& operator<<(ostream& stream, const Component& c)
     return c.dump(stream);
 }
 
-map<uint64_t, int> Unit::trace_indices;
+map<vector<bool>, int> Unit::trace_indices;
 char Unit::delim = ',';
+
+vector<bool> operator++(vector<bool>& n, int)
+{
+    vector<bool> r = n;
+    for (size_t i = 0; i < n.size(); i++)
+    {
+        if (!n[i])
+        {
+            n[i] = true;
+            return r;
+        }
+        n[i] = false;
+    }
+    return r;
+}
 
 void Unit::init_configurations(const shared_ptr<Component>& root, vector<shared_ptr<Unit>>& units)
 {
-    static int index = 0;
-    for (uint64_t i = 0; i < (1ULL << units.size()); i++)
+    int index = 0;
+    for (vector<bool> failed(units.size()); !all_of(failed.begin(), failed.end(), [](bool b){ return b; }); failed++)
     {
         for (const shared_ptr<Unit>& unit: units)
-            unit->_failed = (i&(1 << unit->id)) != 0;
+            unit->_failed = failed[unit->id];
         if (!root->failed())
-            trace_indices[i] = index++;
+            trace_indices[failed] = index++;
     }
+    // A system where failed is all true must be failed
 }
 
 void Unit::set_configuration(const vector<shared_ptr<Unit>>& units)
 {
+    vector<bool> config(units.size());
     for (const shared_ptr<Unit>& unit: units)
+        config[unit->id] = unit->failed();
+    for (const shared_ptr<Unit>& unit: units)
+    {
         unit->prev_index = unit->index;
-    uint64_t config = accumulate(units.begin(), units.end(), 0,
-                                 [](uint64_t a, const shared_ptr<Unit>& b){ return a | ((b->failed() ? 1 : 0) << b->id); });
-    for (const shared_ptr<Unit>& unit: units)
         unit->index = trace_indices.at(config);
+    }
 }
 
 Unit::Unit(const xml_node& node, unsigned int i, map<string, double> defaults)
@@ -203,9 +221,9 @@ double Unit::inverse(int i, double r) const
 bool Unit::failed_in_trace(int i) const
 {
     auto result = find_if(trace_indices.begin(), trace_indices.end(),
-                          [&](pair<uint64_t, int> a){ return a.second == i; });
+                          [&](pair<vector<bool>, int> a){ return a.second == i; });
     if (result != trace_indices.end())
-        return (result->first&(1 << id)) != 0;
+        return result->first[id];
     else
         return false;
 }

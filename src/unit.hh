@@ -54,7 +54,7 @@ class Component
 class Unit : public Component
 {
   private:
-    static std::map<uint64_t, int> trace_indices;
+    static std::map<std::vector<bool>, int> trace_indices;
 
     double age;
     int copies;
@@ -66,7 +66,6 @@ class Unit : public Component
     int prev_index;
 
   protected:
-
     std::vector<std::vector<DataPoint>> traces;
     std::vector<std::map<std::shared_ptr<FailureMechanism>, WeibullDistribution>> reliabilities;
     std::vector<WeibullDistribution> overall_reliabilities;

@@ -14,7 +14,7 @@ namespace oldspot
 
 using namespace std;
 
-WeibullDistribution WeibullDistribution::estimate(const std::vector<double> ttfs, double beta)
+WeibullDistribution WeibullDistribution::estimate(const std::vector<double>& ttfs, double beta)
 {
     WeibullDistribution dist;
     dist.beta = beta;

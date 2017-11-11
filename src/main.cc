@@ -60,7 +60,7 @@ int main(int argc, char* argv[])
     using namespace TCLAP;
 
     int n;
-    bool print_rates;
+    bool print_rates, print_order;
     string time_units, dist_file;
     xml_document doc;
 
@@ -70,6 +70,7 @@ int main(int argc, char* argv[])
         ValuesConstraint<string> unit_values(units);
 
         CmdLine cmd("Compute the reliability distribution of a chip", ' ', "0.1");
+        SwitchArg order("", "print-trace-order", "Print the order in which traces should be listed in the config file and then exit", cmd);
         SwitchArg rates("", "print-aging-rates", "Print aging rate of each unit for each trace", cmd);
         ValueArg<char> delimiter("", "trace-delimiter", "One-character delimiter for data in input trace files (default: ,)", false, ',', "delim", cmd);
         ValueArg<string> time("", "time-units", "Units for displaying time to failure (default: hours)", false, "hours", &unit_values, cmd);
@@ -90,6 +91,7 @@ int main(int argc, char* argv[])
         n = iterations.getValue();
         time_units = time.getValue();
         print_rates = rates.getValue();
+        print_order = order.getValue();
         dist_file = dist_dump.getValue();
     }
     catch (ArgException& e)
@@ -115,11 +117,24 @@ int main(int argc, char* argv[])
     }
     shared_ptr<Component> root = make_shared<Group>(doc.child("group"), units);
 
+    Unit::init_configurations(root, units);
+    if (print_order)
+    {
+        vector<vector<shared_ptr<Unit>>> valid = Unit::valid_configurations(root, units);
+        int index = 0;
+        for (const vector<shared_ptr<Unit>>& v: valid)
+        {
+            cout << index++ << ": "
+                 << accumulate(next(v.begin()), v.end(), (*v.begin())->name, [](const string a, const shared_ptr<Unit>& b){ return a + ", " + b->name; })
+                 << endl;
+        }
+        return 0;
+    }
+
     vector<shared_ptr<FailureMechanism>> mechanisms = {NBTI::model()};
     for (const shared_ptr<Unit>& unit: units)
         unit->computeReliability(mechanisms);
 
-    Unit::init_configurations(root, units);
     if (print_rates)
     {
         const string f = "(failed)";

@@ -74,6 +74,7 @@ class Unit : public Component
     static char delim;
 
     static void init_configurations(const std::shared_ptr<Component>& root, std::vector<std::shared_ptr<Unit>>& units);
+    static std::vector<std::vector<std::shared_ptr<Unit>>> valid_configurations(const std::shared_ptr<Component>& root, std::vector<std::shared_ptr<Unit>>& units);
     static void set_configuration(const std::vector<std::shared_ptr<Unit>>& units);
     static size_t configurations() { return trace_indices.size(); }
 

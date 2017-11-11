@@ -85,6 +85,25 @@ void Unit::init_configurations(const shared_ptr<Component>& root, vector<shared_
     // A system where failed is all true must be failed
 }
 
+vector<vector<shared_ptr<Unit>>> Unit::valid_configurations(const shared_ptr<Component>& root, vector<shared_ptr<Unit>>& units)
+{
+    vector<vector<shared_ptr<Unit>>> names;
+    for (vector<bool> failed(units.size()); !all_of(failed.begin(), failed.end(), [](bool b){ return b; }); failed++)
+    {
+        for (const shared_ptr<Unit>& unit: units)
+            unit->_failed = failed[unit->id];
+        if (!root->failed())
+        {
+            vector<shared_ptr<Unit>> functional;
+            for (shared_ptr<Unit>& unit: units)
+                if (!unit->failed())
+                    functional.push_back(unit);
+            names.push_back(functional);
+        }
+    }
+    return names;
+}
+
 void Unit::set_configuration(const vector<shared_ptr<Unit>>& units)
 {
     vector<bool> config(units.size());

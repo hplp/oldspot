@@ -55,7 +55,6 @@ class NBTI : public FailureMechanism
 
     // High-level parameters 
     const double fail_default = 0.03;   // Relative delay change [5]
-
     const double dt = 3600*24;          // days
 
   public:
@@ -68,6 +67,7 @@ class NBTI : public FailureMechanism
 class EM : public FailureMechanism
 {
   private:
+    // Low-level parameters (chosen from [7])
     const double n = 2;
     const double Ea = 0.8;      // eV
     const double w = 4.5e-7;    // m
@@ -77,6 +77,26 @@ class EM : public FailureMechanism
   public:
     EM() : FailureMechanism("EM") {}
     static const std::shared_ptr<FailureMechanism> model() { static EM em; return std::make_shared<EM>(em); }
+    double timeToFailure(const DataPoint& data, double fail=std::numeric_limits<double>::signaling_NaN()) const override;
+};
+
+class HCI : public FailureMechanism
+{
+  private:
+    // Low-level parameters (chosen from [8])
+    const double Ea = 0.1;              // eV
+    const double E0 = 0.8;              // V/nm
+    const double tox = 1.8;             // nm
+    const double K = 1.7e8;             // nm/C^0.5
+    const double n = 0.5;
+
+    // High-level parameters 
+    const double fail_default = 0.03;   // Relative delay change [5]
+
+  public:
+    HCI() : FailureMechanism("HCI") {}
+    static const std::shared_ptr<FailureMechanism> model() { static HCI hci; return std::make_shared<HCI>(hci); }
+    double degradation(double t, double vdd, double temperature, double frequency, double duty_cycle) const;
     double timeToFailure(const DataPoint& data, double fail=std::numeric_limits<double>::signaling_NaN()) const override;
 };
 
@@ -100,4 +120,8 @@ class EM : public FailureMechanism
  *     (DSN 2012), 2012, pp. 1–12.
  * 
  * [6]
+ * 
+ * [7]
+ * 
+ * [8]
  */

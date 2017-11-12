@@ -59,4 +59,15 @@ double EM::timeToFailure(const DataPoint& data, double fail) const
     return A*pow(data.data.at("power")/data.data.at("vdd")/(w*h), -n)*exp(Ea/(k_B*data.data.at("temperature")));
 }
 
+double HCI::timeToFailure(const DataPoint& data, double fail) const
+{
+    if (isnan(fail))
+        fail = fail_default;
+    double vdd = data.data.at("vdd");
+    double dVth_fail = (vdd - Vt0) - (vdd - Vt0)/pow(1 + fail, 1/alpha); // [ExtraTime]
+    double A_HCI = q/Cox*K*sqrt(Cox*(vdd - Vt0));
+    double Eox = (vdd - Vt0)/tox;
+    return pow(dVth_fail/(A_HCI*exp(Eox/E0)*exp(Ea/(k_B*data.data.at("temperature")))), 1/n)/(data.data.at("activity")*data.data.at("frequency"));
+}
+
 } // namespace oldspot

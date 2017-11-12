@@ -65,6 +65,21 @@ class NBTI : public FailureMechanism
     double timeToFailure(const DataPoint& data, double fail=std::numeric_limits<double>::signaling_NaN()) const override;
 };
 
+class EM : public FailureMechanism
+{
+  private:
+    const double n = 2;
+    const double Ea = 0.8;      // eV
+    const double w = 4.5e-7;    // m
+    const double h = 1.2e-6;    // m
+    const double A = 3.22e21;   // Extracted from [6]
+
+  public:
+    EM() : FailureMechanism("EM") {}
+    static const std::shared_ptr<FailureMechanism> model() { static EM em; return std::make_shared<EM>(em); }
+    double timeToFailure(const DataPoint& data, double fail=std::numeric_limits<double>::signaling_NaN()) const override;
+};
+
 } // namespace oldspot
 
 /*
@@ -83,4 +98,6 @@ class NBTI : public FailureMechanism
  *     wearout due to transistor aging at microarchitecture-level,” in
  *     IEEE/IFIP International Conference on Dependable Systems and Networks
  *     (DSN 2012), 2012, pp. 1–12.
+ * 
+ * [6]
  */

@@ -54,4 +54,9 @@ double NBTI::timeToFailure(const DataPoint& data, double fail) const
         return linterp(dVth_fail, {dVth_prev, t - dt}, {dVth, t});
 }
 
+double EM::timeToFailure(const DataPoint& data, double fail) const
+{
+    return A*pow(data.data.at("power")/data.data.at("vdd")/(w*h), -n)*exp(Ea/(k_B*data.data.at("temperature")));
+}
+
 } // namespace oldspot

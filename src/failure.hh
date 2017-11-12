@@ -13,12 +13,18 @@ namespace oldspot
 
 class FailureMechanism
 {
+  protected:
+    const double beta = 2; // Weibull shape parameter [4]
+
   public:
     const std::string name;
 
     FailureMechanism(const std::string& _n) : name(_n) {}
     virtual double timeToFailure(const DataPoint& data, double fail=std::numeric_limits<double>::signaling_NaN()) const = 0;
-    virtual WeibullDistribution distribution(const std::vector<MTTFSegment>&) const = 0;
+    virtual WeibullDistribution distribution(const std::vector<MTTFSegment>& mttfs) const
+    {
+        return WeibullDistribution(beta, mttfs);
+    }
 };
 
 class NBTI : public FailureMechanism
@@ -47,8 +53,7 @@ class NBTI : public FailureMechanism
     const double eta = 5e12;
     const double beta_OT = 0.36;
 
-    // High-level parameters
-    const double beta = 2;              // Weibull shape parameter [4]
+    // High-level parameters 
     const double fail_default = 0.03;   // Relative delay change [5]
 
     const double dt = 3600*24;          // days
@@ -58,7 +63,6 @@ class NBTI : public FailureMechanism
     static const std::shared_ptr<FailureMechanism> model() { static NBTI nbti; return std::make_shared<NBTI>(nbti); }
     double degradation(double t, double vdd, double dVth, double temperature, double duty_cycle) const;
     double timeToFailure(const DataPoint& data, double fail=std::numeric_limits<double>::signaling_NaN()) const override;
-    WeibullDistribution distribution(const std::vector<MTTFSegment>& mttfs) const override;
 };
 
 } // namespace oldspot

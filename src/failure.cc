@@ -54,9 +54,4 @@ double NBTI::timeToFailure(const DataPoint& data, double fail) const
         return linterp(dVth_fail, {dVth_prev, t - dt}, {dVth, t});
 }
 
-WeibullDistribution NBTI::distribution(const vector<MTTFSegment>& mttfs) const
-{
-    return WeibullDistribution(beta, mttfs);
-}
-
 } // namespace oldspot

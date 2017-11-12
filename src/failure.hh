@@ -100,6 +100,22 @@ class HCI : public FailureMechanism
     double timeToFailure(const DataPoint& data, double fail=std::numeric_limits<double>::signaling_NaN()) const override;
 };
 
+class TDDB : public FailureMechanism
+{
+  private:
+    // Low-level parameters (chosen from [9])
+    const double a = 78;
+    const double b = -0.081;    // 1/K
+    const double X = 0.759;     // eV
+    const double Y = -66.8;     // eV*K
+    const double Z = -8.37e-4;  // eV/K
+
+  public:
+    TDDB() : FailureMechanism("TDDB") {}
+    static const std::shared_ptr<FailureMechanism> model() { static TDDB tddb; return std::make_shared<TDDB>(tddb); }
+    double timeToFailure(const DataPoint& data, double fail=std::numeric_limits<double>::signaling_NaN()) const override;
+};
+
 } // namespace oldspot
 
 /*
@@ -124,4 +140,6 @@ class HCI : public FailureMechanism
  * [7]
  * 
  * [8]
+ * 
+ * [9]
  */

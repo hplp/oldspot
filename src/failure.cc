@@ -70,4 +70,10 @@ double HCI::timeToFailure(const DataPoint& data, double fail) const
     return pow(dVth_fail/(A_HCI*exp(Eox/E0)*exp(Ea/(k_B*data.data.at("temperature")))), 1/n)/(data.data.at("activity")*data.data.at("frequency"));
 }
 
+double TDDB::timeToFailure(const DataPoint& data, double fail) const
+{
+    double T = data.data.at("temperature");
+    return pow(data.data.at("vdd"), -(a - b*T))*exp((X + Y/T + Z*T)/(k_B*T));
+}
+
 } // namespace oldspot

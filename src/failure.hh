@@ -17,6 +17,14 @@ class FailureMechanism
     const double beta = 2; // Weibull shape parameter [4]
 
   public:
+    // Universal constants
+    static constexpr double q = 1.60217662e-19;    // C
+    static constexpr double k_B = 8.6173303e-5;    // eV/K
+    // Device parameters
+    static constexpr double Vt0 = 0.49158;         // V, taken from PTM [1] at 45nm
+    static constexpr double Cox = 5.934e-6;        // F
+    static constexpr double alpha = 1.3;           // alpha power law [2]
+
     const std::string name;
 
     FailureMechanism(const std::string& _n) : name(_n) {}
@@ -30,14 +38,6 @@ class FailureMechanism
 class NBTI : public FailureMechanism
 {
   private:
-    const double q = 1.60217662e-19;    // C
-    const double k_B = 8.6173303e-5;    // eV/K
-
-    // Device parameters
-    const double Vt0 = 0.49158;         // V, taken from PTM [1] at 45nm
-    const double Cox = 5.934e-6;        // F
-    const double alpha = 1.3;           // alpha power law [2]
-
     // Low-level parameters (chosen from [3])
     const double A = 9e11;
     const double B = 8.5e11;

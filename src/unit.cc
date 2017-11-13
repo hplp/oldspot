@@ -193,7 +193,6 @@ void Unit::update_reliability(double dt)
 
 double Unit::activity(const DataPoint& data) const
 {
-    // For NBTI in an SRAM, this is data-dependent rather than usage-dependent
     return data.data.at("activity");
 }
 

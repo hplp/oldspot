@@ -138,6 +138,8 @@ int main(int argc, char* argv[])
             units.push_back(make_shared<Core>(child, units.size()));
         else if (node_is(child, "logic"))
             units.push_back(make_shared<Logic>(child, units.size()));
+        else if (node_is(child, "memory"))
+            units.push_back(make_shared<Memory>(child, units.size()));
         else
         {
             cerr << "unknown unit type \"" << child.name() << '"' << endl;

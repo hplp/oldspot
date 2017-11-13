@@ -121,6 +121,17 @@ class Logic : public Unit
     double activity(const DataPoint& data) const override;
 };
 
+class Memory : public Unit
+{
+  public:
+    Memory(const pugi::xml_node& node, unsigned int i) : Unit(node, i) {}
+    // This is data-dependent rather than usage-dependent, but we assume that
+    // high-order bits tend to be zero, which gives an activity factor of 1
+    // in SRAM (we also assume that the aging of the SRAM dominates that of
+    // the addressing logic)
+    double activity(const DataPoint& data) const override { return 1; }
+};
+
 class Group : public Component
 {
   private:

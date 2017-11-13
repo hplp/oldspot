@@ -19,6 +19,7 @@
 #include "failure.hh"
 #include "trace.hh"
 #include "unit.hh"
+#include "util.hh"
 
 using namespace oldspot;
 using namespace pugi;
@@ -62,6 +63,7 @@ int main(int argc, char* argv[])
     int n;
     bool print_rates, print_order;
     string time_units, dist_file;
+    vector<shared_ptr<FailureMechanism>> mechanisms;
     xml_document doc;
 
     try
@@ -72,6 +74,7 @@ int main(int argc, char* argv[])
         CmdLine cmd("Compute the reliability distribution of a chip", ' ', "0.1");
         SwitchArg order("", "print-trace-order", "Print the order in which traces should be listed in the config file and then exit", cmd);
         SwitchArg rates("", "print-aging-rates", "Print aging rate of each unit for each trace", cmd);
+        ValueArg<string> phenomena("", "aging-mechanisms", "Comma-separated list of aging mechanisms to include or \"all\" for all of them", false, "all", "mechanisms", cmd);
         ValueArg<char> delimiter("", "trace-delimiter", "One-character delimiter for data in input trace files (default: ,)", false, ',', "delim", cmd);
         ValueArg<string> time("", "time-units", "Units for displaying time to failure (default: hours)", false, "hours", &unit_values, cmd);
         ValueArg<int> iterations("n", "iterations", "Number of Monte-Carlo iterations to perform (default: 1000)", false, 1000, "iterations", cmd);
@@ -93,6 +96,27 @@ int main(int argc, char* argv[])
         print_rates = rates.getValue();
         print_order = order.getValue();
         dist_file = dist_dump.getValue();
+
+        string p = phenomena.getValue();
+        transform(p.begin(), p.end(), p.begin(), ::tolower);
+        if (p == "all")
+            mechanisms = {NBTI::model(), EM::model(), HCI::model(), TDDB::model()};
+        else
+        {
+            for (const string& token: split(p, ','))
+            {
+                if (token == "nbti")
+                    mechanisms.push_back(NBTI::model());
+                else if (token == "em")
+                    mechanisms.push_back(EM::model());
+                else if (token == "hci")
+                    mechanisms.push_back(HCI::model());
+                else if (token == "tddb")
+                    mechanisms.push_back(TDDB::model());
+                else
+                    cerr << "Unknown aging mechanism \"" << token << '"' << endl;
+            }
+        }
     }
     catch (ArgException& e)
     {
@@ -131,7 +155,6 @@ int main(int argc, char* argv[])
         return 0;
     }
 
-    vector<shared_ptr<FailureMechanism>> mechanisms = {NBTI::model()};
     for (const shared_ptr<Unit>& unit: units)
         unit->computeReliability(mechanisms);
 

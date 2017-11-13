@@ -114,8 +114,13 @@ int main(int argc, char* argv[])
                 else if (token == "tddb")
                     mechanisms.push_back(TDDB::model());
                 else
-                    cerr << "Unknown aging mechanism \"" << token << '"' << endl;
+                    cerr << "warning: ignoring unknown aging mechanism \"" << token << '"' << endl;
             }
+        }
+        if (mechanisms.empty())
+        {
+            cerr << "error: no aging mechanisms selected" << endl;
+            return 1;
         }
     }
     catch (ArgException& e)

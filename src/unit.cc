@@ -16,7 +16,6 @@
 #include <vector>
 
 #include "failure.hh"
-#include "interp.hh"
 #include "reliability.hh"
 #include "trace.hh"
 

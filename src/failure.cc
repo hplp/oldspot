@@ -5,9 +5,9 @@
 #include <memory>
 #include <vector>
 
-#include "interp.hh"
 #include "reliability.hh"
 #include "trace.hh"
+#include "util.hh"
 
 namespace oldspot
 {

@@ -14,6 +14,8 @@
 #include <utility>
 #include <vector>
 
+#include "util.hh"
+
 namespace oldspot
 {
 
@@ -37,33 +39,23 @@ vector<DataPoint> parseTrace(const string fname, char delimiter)
         exit(1);
     }
 
-    string line, token;
-    istringstream stream;
-    vector<string> quantities;
+    string line;
     vector<DataPoint> trace;
     
     // Parse unit names
     getline(file, line); // Get line containing unit names
-    stream.str(line);
-    stream.clear();
-    getline(stream, token, delimiter); // Ignore header of time column
-    while (getline(stream, token, delimiter))
-        quantities.push_back(token);
+    vector<string> quantities = split(line, delimiter);
+    quantities.erase(quantities.begin());
 
     // Parse times (first column) and values
     double prev = 0;
     while (getline(file, line))
     {
-        stream.str(line);
-        stream.clear();
-        getline(stream, token, delimiter);
-        double time = stod(token); // First column should be time
         map<string, double> data;
-        for (const string& quantity: quantities)
-        {
-            getline(stream, token, delimiter);
-            data[quantity] = stod(token);
-        }
+        vector<string> values = split(line, delimiter);
+        double time = stod(values[0]); // First column should be time
+        for (size_t i = 0; i < quantities.size(); i++)
+            data[quantities[i]] = stod(values[i + 1]);
         trace.push_back({time, time - prev, data});
         prev = time;
     }

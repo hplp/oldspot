@@ -64,16 +64,34 @@ double HCI::timeToFailure(const DataPoint& data, double fail) const
     if (isnan(fail))
         fail = fail_default;
     double vdd = data.data.at("vdd");
-    double dVth_fail = (vdd - Vt0) - (vdd - Vt0)/pow(1 + fail, 1/alpha); // [ExtraTime]
-    double A_HCI = q/Cox*K*sqrt(Cox*(vdd - Vt0));
-    double Eox = (vdd - Vt0)/tox;
-    return pow(dVth_fail/(A_HCI*exp(Eox/E0)*exp(Ea/(k_B*data.data.at("temperature")))), 1/n)/(data.data.at("activity")*data.data.at("frequency"));
+    double dVth_fail = (vdd - Vt0_n) - (vdd - Vt0_n)/pow(1 + fail, 1/alpha); // [ExtraTime]
+    cout << "dVth_fail = " << dVth_fail << endl;
+
+    double Vt = k_B/eV_J*data.data.at("temperature")/q;
+    cout << "Vt = " << Vt << endl;
+    double vdsat = ((vdd - Vt0_n + 2*Vt)*L*Esat)/(vdd - Vt0_n + 2*Vt + A_bulk*L*Esat);
+    cout << "vdsat = " << vdsat << endl;
+    double Em = (vdd - vdsat)/l;
+    cout << "Em =  " << Em << endl;
+    double Eox = (vdd - Vt0_n)/tox;
+    cout << "Eox = " << Eox << endl;
+    double A_HCI = q/Cox*K*sqrt(Cox*(vdd - Vt0_n));
+    cout << "A_HCI = " << A_HCI << endl;
+
+    double E = phi_it/eV_J/(q*lambda*Em);
+    cout << "E = " << E << endl;
+    cout << "Ea/kT = " << (0.1/k_B*data.data.at("temperature")) << endl;
+
+    double t = pow(dVth_fail/(A_HCI*exp(Eox/E0)*exp(-phi_it/eV_J/(q*lambda*Em))), 1/n)/(data.data.at("activity")*data.data.at("frequency"));
+    cout << t << endl;
+
+    return t;
 }
 
 double TDDB::timeToFailure(const DataPoint& data, double fail) const
 {
     double T = data.data.at("temperature");
-    return pow(data.data.at("vdd"), -(a - b*T))*exp((X + Y/T + Z*T)/(k_B*T));
+    return pow(data.data.at("vdd"), a - b*T)*exp((X + Y/T + Z*T)/(k_B*T));
 }
 
 } // namespace oldspot

@@ -18,12 +18,16 @@ class FailureMechanism
 
   public:
     // Universal constants
-    static constexpr double q = 1.60217662e-19;    // C
-    static constexpr double k_B = 8.6173303e-5;    // eV/K
+    static constexpr double q = 1.60217662e-19;     // C
+    static constexpr double k_B = 8.6173303e-5;     // eV/K
+    static constexpr double eV_J = 6.242e18;        // eV -> J
     // Device parameters
-    static constexpr double Vt0 = 0.49158;         // V, taken from PTM [1] at 45nm
-    static constexpr double Cox = 5.934e-6;        // F
-    static constexpr double alpha = 1.3;           // alpha power law [2]
+    static constexpr double L = 65;                 // nm
+    static constexpr double Vt0 = 0.49158;          // V, taken from PTM [1] at 45nm
+    static constexpr double Vt0_n = 0.201;          // V
+    static constexpr double tox = 1.8;              // nm
+    static constexpr double Cox = 1.92e-20;          // F/m
+    static constexpr double alpha = 1.3;            // alpha power law [2]
 
     const std::string name;
 
@@ -84,11 +88,15 @@ class HCI : public FailureMechanism
 {
   private:
     // Low-level parameters (chosen from [8])
-    const double Ea = 0.1;              // eV
+//    const double Ea = 0.1;              // eV
     const double E0 = 0.8;              // V/nm
-    const double tox = 1.8;             // nm
     const double K = 1.7e8;             // nm/C^0.5
-    const double n = 0.5;
+    const double A_bulk = 0.005;
+    const double phi_it = 3.7;          // eV
+    const double lambda = 7.8;          // nm
+    const double l = 17;                // nm
+    const double Esat = 0.011;          // V/nm
+    const double n = 0.45;
 
     // High-level parameters 
     const double fail_default = 0.03;   // Relative delay change [5]

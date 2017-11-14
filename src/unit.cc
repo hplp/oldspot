@@ -191,7 +191,7 @@ void Unit::update_reliability(double dt)
     _current_reliability = reliability(age);
 }
 
-double Unit::activity(const DataPoint& data) const
+double Unit::activity(const DataPoint& data, const shared_ptr<FailureMechanism>& mechanism) const
 {
     return data.data.at("activity");
 }
@@ -205,7 +205,7 @@ void Unit::computeReliability(const vector<shared_ptr<FailureMechanism>>& mechan
             vector<MTTFSegment> mttfs(traces[i].size());
             for (size_t j = 0; j < traces[i].size(); j++)
             {
-                traces[i][j].data["activity"] = activity(traces[i][j]);
+                traces[i][j].data["activity"] = activity(traces[i][j], mechanism);
                 double dt = j > 0 ? traces[i][j].time - traces[i][j - 1].time : traces[i][j].time;
                 mttfs[j] = {dt, mechanism->timeToFailure(traces[i][j])};
             }
@@ -261,14 +261,22 @@ ostream& Unit::dump(ostream& stream) const
     return stream << name;
 }
 
-double Core::activity(const DataPoint& data) const
+double Core::activity(const DataPoint& data, const shared_ptr<FailureMechanism>&) const
 {
     return data.data.at("power")/data.data.at("peak_power");
 }
 
-double Logic::activity(const DataPoint& data) const
+double Logic::activity(const DataPoint& data, const shared_ptr<FailureMechanism>&) const
 {
     return data.data.at("activity")/(data.duration*data.data.at("frequency"));
+}
+
+double Memory::activity(const DataPoint& data, const shared_ptr<FailureMechanism>& mechanism) const
+{
+    if (mechanism == HCI::model())
+        return 0;
+    else
+        return 1;
 }
 
 Group::Group(const xml_node& node, vector<shared_ptr<Unit>>& units)

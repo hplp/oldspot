@@ -87,7 +87,7 @@ class Unit : public Component
     void update_reliability(double dt);
     double current_reliability() const { return _current_reliability; }
 
-    virtual double activity(const DataPoint& data) const;
+    virtual double activity(const DataPoint& data, const std::shared_ptr<FailureMechanism>& mechanism) const;
     void computeReliability(const std::vector<std::shared_ptr<FailureMechanism>>& mechanisms);
 
     double aging_rate(int i) const;
@@ -111,14 +111,14 @@ class Core : public Unit
   public:
     Core(const pugi::xml_node& node, unsigned int i)
         : Unit(node, i, {{"power", 1}, {"peak_power", 1}}) {}
-    double activity(const DataPoint& data) const override;
+    double activity(const DataPoint& data, const std::shared_ptr<FailureMechanism>&) const override;
 };
 
 class Logic : public Unit
 {
   public:
     Logic(const pugi::xml_node& node, unsigned int i) : Unit(node, i) {}
-    double activity(const DataPoint& data) const override;
+    double activity(const DataPoint& data, const std::shared_ptr<FailureMechanism>&) const override;
 };
 
 class Memory : public Unit
@@ -129,7 +129,7 @@ class Memory : public Unit
     // high-order bits tend to be zero, which gives an activity factor of 1
     // in SRAM (we also assume that the aging of the SRAM dominates that of
     // the addressing logic)
-    double activity(const DataPoint& data) const override { return 1; }
+    double activity(const DataPoint& data, const std::shared_ptr<FailureMechanism>& mechanism) const override;
 };
 
 class Group : public Component

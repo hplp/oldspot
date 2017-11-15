@@ -71,21 +71,9 @@ vector<bool> operator++(vector<bool>& n, int)
     return r;
 }
 
-void Unit::init_configurations(const shared_ptr<Component>& root, vector<shared_ptr<Unit>>& units)
+vector<vector<shared_ptr<Unit>>> Unit::init_configurations(const shared_ptr<Component>& root, vector<shared_ptr<Unit>>& units)
 {
     int index = 0;
-    for (vector<bool> failed(units.size()); !all_of(failed.begin(), failed.end(), [](bool b){ return b; }); failed++)
-    {
-        for (const shared_ptr<Unit>& unit: units)
-            unit->_failed = failed[unit->id];
-        if (!root->failed())
-            trace_indices[failed] = index++;
-    }
-    // A system where failed is all true must be failed
-}
-
-vector<vector<shared_ptr<Unit>>> Unit::valid_configurations(const shared_ptr<Component>& root, vector<shared_ptr<Unit>>& units)
-{
     vector<vector<shared_ptr<Unit>>> names;
     for (vector<bool> failed(units.size()); !all_of(failed.begin(), failed.end(), [](bool b){ return b; }); failed++)
     {
@@ -98,8 +86,10 @@ vector<vector<shared_ptr<Unit>>> Unit::valid_configurations(const shared_ptr<Com
                 if (!unit->failed())
                     functional.push_back(unit);
             names.push_back(functional);
+            trace_indices[failed] = index++;
         }
     }
+    // A system where failed is all true must be failed
     return names;
 }
 

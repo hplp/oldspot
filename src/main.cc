@@ -148,10 +148,9 @@ int main(int argc, char* argv[])
     }
     shared_ptr<Component> root = make_shared<Group>(doc.child("group"), units);
 
-    Unit::init_configurations(root, units);
+    vector<vector<shared_ptr<Unit>>> valid = Unit::init_configurations(root, units);
     if (print_order)
     {
-        vector<vector<shared_ptr<Unit>>> valid = Unit::valid_configurations(root, units);
         int index = 0;
         for (const vector<shared_ptr<Unit>>& v: valid)
         {

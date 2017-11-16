@@ -56,7 +56,7 @@ class NBTI : public FailureMechanism
     const double E_AHT = 0.03;          // eV
 
     // High-level parameters 
-    const double dt = 3600*24;          // days
+    const double dt = 3600*24*7;        // weeks
 
   public:
     NBTI() : FailureMechanism("NBTI") {}

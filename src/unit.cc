@@ -107,7 +107,7 @@ Unit::Unit(const xml_node& node, unsigned int i, unordered_map<string, double> d
             traces[failed] = trace;
         }
     }
-    else
+    if (traces.count({""}) == 0)
         traces[{""}] = {{1, 1, defaults}};
     for (auto& trace: traces)
         for (DataPoint& data: trace.second)
@@ -133,7 +133,7 @@ void Unit::set_configuration(const shared_ptr<Component>& root)
     if (_failed)
         cerr << "warning: setting configuration for failed unit " << name << endl;
     if (root->failed())
-        cerr << "warning: setting configuration of " << name << " for failed system" << endl;
+        cerr << "warning: setting configuration for failed system" << endl;
 
     prev_config = config;
     config.clear();
@@ -151,7 +151,7 @@ void Unit::set_configuration(const shared_ptr<Component>& root)
     if (traces.count(config) == 0)
     {
         cerr << "warning: can't find configuration " << config << " for " + name << endl;
-        config = traces.begin()->first;
+        config = {""};
         cerr << "         using configuration " << config << endl;
     }
 }

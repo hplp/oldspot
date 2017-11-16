@@ -61,7 +61,7 @@ int main(int argc, char* argv[])
     using namespace TCLAP;
 
     int n;
-    bool print_rates;
+    bool print_rates, v;
     string time_units, dist_file;
     vector<shared_ptr<FailureMechanism>> mechanisms;
     xml_document doc;
@@ -72,6 +72,7 @@ int main(int argc, char* argv[])
         ValuesConstraint<string> unit_values(units);
 
         CmdLine cmd("Compute the reliability distribution of a chip", ' ', "0.1");
+        SwitchArg verbose("v", "verbose", "Display progress output", cmd);
         SwitchArg rates("", "print-aging-rates", "Print aging rate of each unit for each trace", cmd);
         ValueArg<string> phenomena("", "aging-mechanisms", "Comma-separated list of aging mechanisms to include or \"all\" for all of them", false, "all", "mechanisms", cmd);
         ValueArg<char> delimiter("", "trace-delimiter", "One-character delimiter for data in input trace files (default: ,)", false, ',', "delim", cmd);
@@ -94,6 +95,7 @@ int main(int argc, char* argv[])
         time_units = time.getValue();
         print_rates = rates.getValue();
         dist_file = dist_dump.getValue();
+        v = verbose.getValue();
 
         string p = phenomena.getValue();
         transform(p.begin(), p.end(), p.begin(), ::tolower);
@@ -127,6 +129,8 @@ int main(int argc, char* argv[])
         return 1;
     }
 
+    if (v)
+        cout << "Creating units..." << endl;
     vector<shared_ptr<Unit>> units;
     for (const xml_node& child: doc.children("unit"))
     {
@@ -144,6 +148,8 @@ int main(int argc, char* argv[])
             exit(1);
         }
     }
+    if (v)
+        cout << "Creating failure dependency graph..." << endl;
     shared_ptr<Component> root = make_shared<Group>(doc.child("group"), units);
 
     for (const shared_ptr<Unit>& unit: units)
@@ -152,6 +158,9 @@ int main(int argc, char* argv[])
     // Monte Carlo sim to get overall failure distribution
     for (int i = 0; i < n; i++)
     {
+        if (v)
+            cout << "Beginning Monte Carlo iteration " << i << endl;
+
         unordered_set<shared_ptr<Component>> failed_components;
         unordered_set<shared_ptr<Unit>> healthy(units.begin(), units.end());
         double t = 0;

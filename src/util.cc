@@ -11,6 +11,9 @@ namespace oldspot
 
 vector<string> split(const string& str, char delimiter)
 {
+    if (str.empty())
+        return {""};
+
     string token;
     istringstream stream(str);
     vector<string> tokens;

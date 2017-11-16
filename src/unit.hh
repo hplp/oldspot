@@ -88,9 +88,10 @@ class Component
 
 class Unit : public Component
 {
-  private:
+  public:
     typedef std::unordered_set<std::string> config_t;
 
+  private:
     double age;
     int copies;
     double _current_reliability;
@@ -137,6 +138,8 @@ class Unit : public Component
 
     virtual std::ostream& dump(std::ostream& stream) const override;
 };
+
+std::ostream& operator<<(std::ostream& os, const Unit::config_t& config);
 
 class Core : public Unit
 {

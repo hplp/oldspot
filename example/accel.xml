@@ -14,7 +14,6 @@
     <default frequency="2000" />
     <redundancy type="serial" count="1" />
     <trace file="example/two.trace" failed="" />
-    <trace file="example/fail.trace" failed="core"/>
 </unit>
 
 <group name="system" failures="0">

@@ -29,6 +29,14 @@ namespace oldspot
 using namespace pugi;
 using namespace std;
 
+ostream& operator<<(ostream& os, const Unit::config_t& config)
+{
+    if (config.empty())
+        return os << "[]";
+    return os << '[' << accumulate(next(config.begin()), config.end(), *config.begin(),
+                                   [](const string& a, const string& b){ return a + ',' + b; }) << ']';
+}
+
 double Component::mttf() const
 {
     if (ttfs.empty())
@@ -90,7 +98,8 @@ Unit::Unit(const xml_node& node, unsigned int i, unordered_map<string, double> d
         {
             vector<DataPoint> trace = parseTrace(child.attribute("file").value(), delim);
             vector<string> failed_vector = split(child.attribute("failed").value(), ',');
-            unordered_set<string> failed(failed_vector.begin(), failed_vector.end());
+            config_t failed(failed_vector.begin(), failed_vector.end());
+
             for (const auto& def: defaults)
                 for (DataPoint& data: trace)
                     if (data.data.count(def.first) == 0)
@@ -99,10 +108,7 @@ Unit::Unit(const xml_node& node, unsigned int i, unordered_map<string, double> d
         }
     }
     else
-    {
-        unordered_set<string> missing{""};
-        traces[missing] = {{1, 1, defaults}};
-    }
+        traces[{""}] = {{1, 1, defaults}};
     for (auto& trace: traces)
         for (DataPoint& data: trace.second)
             data.data["frequency"] *= 1e6; // Expecting MHz; convert to Hz
@@ -129,30 +135,25 @@ void Unit::set_configuration(const shared_ptr<Component>& root)
     if (root->failed())
         cerr << "warning: setting configuration of " << name << " for failed system" << endl;
 
-    unordered_set<string> failed;
-    conditional_walk(root, [&](shared_ptr<Component>& c){
+    prev_config = config;
+    config.clear();
+    conditional_walk(root, [&](const shared_ptr<Component>& c){
         if (c->failed())
         {
-            failed.insert(c->name);
+            config.insert(c->name);
             return false;
         }
         return true;
     });
+    if (config.empty())
+        config.insert("");
 
-    prev_config = config;
-    if (traces.count(failed) == 0)
+    if (traces.count(config) == 0)
     {
-        string str = accumulate(next(failed.begin()), failed.end(), *failed.begin(),
-                                [](const string& a, const string& b){ return a + ',' + b; });
-        cerr << "warning: can't find configuration " + str + " for " + name << endl;
-        auto choice = traces.begin();
-        str = accumulate(next(choice->first.begin()), choice->first.end(), *(choice->first.begin()),
-                         [](const string& a, const string& b){ return a + ',' + b; });
-        cerr << "         using configuration " + str << endl;
-        config = choice->first;
+        cerr << "warning: can't find configuration " << config << " for " + name << endl;
+        config = traces.begin()->first;
+        cerr << "         using configuration " << config << endl;
     }
-    else
-        config = failed;
 }
 
 double Unit::get_next_event() const

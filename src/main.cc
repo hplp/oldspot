@@ -189,6 +189,8 @@ int main(int argc, char* argv[])
                     failed_components.insert(c);
                 }
             });
+            for (const shared_ptr<Unit>& unit: Unit::parents_failed(root, units))
+                failed_components.insert(unit);
         }
     }
 

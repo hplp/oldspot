@@ -109,6 +109,8 @@ class Unit : public Component
   public:
     static char delim;
 
+    static std::vector<std::shared_ptr<Unit>> parents_failed(const std::shared_ptr<Component>& root, const std::vector<std::shared_ptr<Unit>>& units);
+
     const unsigned int id;
 
     Unit(const pugi::xml_node& node, unsigned int i, std::unordered_map<std::string, double> defaults={});

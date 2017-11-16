@@ -67,6 +67,22 @@ ostream& operator<<(ostream& stream, const Component& c)
 
 char Unit::delim = ',';
 
+vector<shared_ptr<Unit>> Unit::parents_failed(const shared_ptr<Component>& root, const vector<shared_ptr<Unit>>& units)
+{
+    vector<shared_ptr<Unit>> failed(units.begin(), units.end());
+    Component::conditional_walk(root, [&](const shared_ptr<Component>& c){
+        if (c->failed())
+            return false;
+        shared_ptr<Unit> u = dynamic_pointer_cast<Unit>(c);
+        if (u)
+            failed.erase(remove(failed.begin(), failed.end(), u));
+        return true;
+    });
+    for (shared_ptr<Unit>& unit: failed)
+        unit->_failed = true;
+    return failed;
+}
+
 Unit::Unit(const xml_node& node, unsigned int i, unordered_map<string, double> defaults)
     : Component(node.attribute("name").value()),
       age(0), copies(1), _current_reliability(1), _failed(false), remaining(1), serial(true), config({}), prev_config({}), id(i)

@@ -27,7 +27,7 @@ class WeibullDistribution
     WeibullDistribution(double b, const std::vector<MTTFSegment>& mttfs);
 
     double reliability(double t) const { return std::exp(-std::pow(t/alpha, beta)); }
-    double inverse(double r) const { return alpha*std::pow(-std::log(r), 1/beta); }
+    double inverse(double r) const;
     double mttf() const { return alpha*std::tgamma(1/beta + 1); }
     double rate() const { return alpha; }
 

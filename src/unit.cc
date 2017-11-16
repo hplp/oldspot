@@ -177,7 +177,10 @@ double Unit::get_next_event() const
     static random_device dev;
     static mt19937 gen(dev());
     uniform_real_distribution<double> r(0, _current_reliability);
-    return inverse(r(gen)) - inverse(_current_reliability);
+    double next = inverse(r(gen));
+    if (isinf(next))
+        return numeric_limits<double>::infinity();
+    return next - inverse(_current_reliability);
 }
 
 void Unit::update_reliability(double dt)

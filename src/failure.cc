@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <iostream>
+#include <limits>
 #include <memory>
 #include <vector>
 
@@ -35,6 +36,8 @@ double NBTI::timeToFailure(const DataPoint& data, double fail) const
 {
     if (isnan(fail))
         fail = fail_default;
+    if (data.data.at("activity") == 0)
+        return numeric_limits<double>::infinity();
 
     // Create a linear approximation of dVth(t)
     double dVth_fail = (data.data.at("vdd") - Vt0) - (data.data.at("vdd") - Vt0)/pow(1 + fail, 1/alpha); // [ExtraTime]

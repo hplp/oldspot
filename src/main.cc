@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <cstring>
 #include <fstream>
@@ -184,6 +185,9 @@ int main(int argc, char* argv[])
                 }
             }
             
+            if (isinf(dt_event))
+                break;
+
             for (const shared_ptr<Unit>& unit: healthy)
                 unit->update_reliability(dt_event);
             failed->failure();

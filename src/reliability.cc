@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <functional>
 #include <iostream>
+#include <limits>
 #include <numeric>
 #include <stdexcept>
 #include <vector>
@@ -42,6 +43,13 @@ WeibullDistribution::WeibullDistribution(double b, const vector<MTTFSegment>& mt
     
     // Invert to resemble actual Weibull alpha
     alpha = 1/alpha;
+}
+
+double WeibullDistribution::inverse(double r) const
+{
+    if (isinf(alpha))
+        return numeric_limits<double>::infinity();
+    return alpha*pow(-log(r), 1/beta);
 }
 
 WeibullDistribution WeibullDistribution::operator*(const WeibullDistribution& other) const

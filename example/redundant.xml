@@ -5,7 +5,7 @@
     <default temperature="300" />
     <default frequency="2000" />
     <redundancy type="serial" count="2" />
-    <trace file="example/one.trace" />
+    <trace file="example/one.trace" failed="" />
 </unit>
 
 <group name="system" failures="0">

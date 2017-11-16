@@ -61,7 +61,7 @@ int main(int argc, char* argv[])
     using namespace TCLAP;
 
     int n;
-    bool print_rates, print_order;
+    bool print_rates;
     string time_units, dist_file;
     vector<shared_ptr<FailureMechanism>> mechanisms;
     xml_document doc;
@@ -72,7 +72,6 @@ int main(int argc, char* argv[])
         ValuesConstraint<string> unit_values(units);
 
         CmdLine cmd("Compute the reliability distribution of a chip", ' ', "0.1");
-        SwitchArg order("", "print-trace-order", "Print the order in which traces should be listed in the config file and then exit", cmd);
         SwitchArg rates("", "print-aging-rates", "Print aging rate of each unit for each trace", cmd);
         ValueArg<string> phenomena("", "aging-mechanisms", "Comma-separated list of aging mechanisms to include or \"all\" for all of them", false, "all", "mechanisms", cmd);
         ValueArg<char> delimiter("", "trace-delimiter", "One-character delimiter for data in input trace files (default: ,)", false, ',', "delim", cmd);
@@ -94,7 +93,6 @@ int main(int argc, char* argv[])
         n = iterations.getValue();
         time_units = time.getValue();
         print_rates = rates.getValue();
-        print_order = order.getValue();
         dist_file = dist_dump.getValue();
 
         string p = phenomena.getValue();
@@ -148,47 +146,8 @@ int main(int argc, char* argv[])
     }
     shared_ptr<Component> root = make_shared<Group>(doc.child("group"), units);
 
-    vector<vector<shared_ptr<Unit>>> valid = Unit::init_configurations(root, units);
-    if (print_order)
-    {
-        int index = 0;
-        for (const vector<shared_ptr<Unit>>& v: valid)
-        {
-            cout << index++ << ": "
-                 << accumulate(next(v.begin()), v.end(), (*v.begin())->name, [](const string a, const shared_ptr<Unit>& b){ return a + ", " + b->name; })
-                 << endl;
-        }
-        return 0;
-    }
-
     for (const shared_ptr<Unit>& unit: units)
         unit->computeReliability(mechanisms);
-
-    if (print_rates)
-    {
-        const string f = "(failed)";
-        size_t rate_width = f.length();
-        size_t name_width = 0;
-        for (const shared_ptr<Unit>& unit: units)
-        {
-            name_width = max(name_width, unit->name.length());
-            for (size_t i = 0; i < Unit::configurations(); i++)
-                rate_width = max(rate_width, to_string(convert_time(unit->aging_rate(i), time_units)).length());
-        }
-        cout << "Aging Rates:" << endl;
-        for (const shared_ptr<Unit>& unit: units)
-        {
-            cout << left << setw(name_width) << unit->name << " | ";
-            for (size_t i = 0; i < Unit::configurations(); i++)
-            {
-                cout << right << setw(rate_width) << (unit->aging_rate(i) == 0 ? f : to_string(convert_time(unit->aging_rate(i), time_units)));
-                if (i != Unit::configurations() - 1)
-                    cout << " | ";
-            }
-            cout << endl;
-        }
-        cout << endl;
-    }
 
     // Monte Carlo sim to get overall failure distribution
     for (int i = 0; i < n; i++)
@@ -200,7 +159,9 @@ int main(int argc, char* argv[])
             unit->reset();
         while (!root->failed())
         {
-            Unit::set_configuration(units);
+            for (const shared_ptr<Unit>& unit: units)
+                if (!unit->failed())
+                    unit->set_configuration(root);
 
             double dt_event = numeric_limits<double>::infinity();
             shared_ptr<Unit> failed;

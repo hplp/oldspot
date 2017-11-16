@@ -9,12 +9,29 @@
 #include <stack>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
 #include "failure.hh"
 #include "reliability.hh"
 #include "trace.hh"
+
+namespace std
+{
+    template <>
+    class hash<unordered_set<string>>
+    {
+      public:
+        size_t operator()(const unordered_set<string>& strs) const
+        {
+            size_t result = 0;
+            for (const string& s: strs)
+                result ^= strs.hash_function()(s);
+            return result;
+        }
+    };
+}
 
 namespace oldspot
 {
@@ -39,6 +56,23 @@ class Component
         }
     }
 
+    template<typename function>
+    static void conditional_walk(const std::shared_ptr<Component>& root, function&& op)
+    {
+        using namespace std;
+    
+        stack<shared_ptr<Component>> components;
+        components.push(root);
+        while (!components.empty())
+        {
+            shared_ptr<Component> component = components.top();
+            components.pop();
+            if (op(component))
+                for (const shared_ptr<Component>& child: component->children())
+                    components.push(child);
+        }
+    }
+
     const std::string name;
     std::vector<double> ttfs;
 
@@ -55,7 +89,7 @@ class Component
 class Unit : public Component
 {
   private:
-    static std::unordered_map<std::bitset<64>, int> trace_indices;
+    typedef std::unordered_set<std::string> config_t;
 
     double age;
     int copies;
@@ -63,26 +97,24 @@ class Unit : public Component
     bool _failed;
     int remaining;
     bool serial;
-    int index;
-    int prev_index;
+    config_t config;
+    config_t prev_config;
 
   protected:
-    std::vector<std::vector<DataPoint>> traces;
-    std::vector<std::unordered_map<std::shared_ptr<FailureMechanism>, WeibullDistribution>> reliabilities;
-    std::vector<WeibullDistribution> overall_reliabilities;
+    std::unordered_map<config_t, std::vector<DataPoint>> traces;
+    std::unordered_map<config_t, std::unordered_map<std::shared_ptr<FailureMechanism>, WeibullDistribution>> reliabilities;
+    std::unordered_map<config_t, WeibullDistribution> overall_reliabilities;
 
   public:
     static char delim;
-
-    static std::vector<std::vector<std::shared_ptr<Unit>>> init_configurations(const std::shared_ptr<Component>& root, std::vector<std::shared_ptr<Unit>>& units);
-    static void set_configuration(const std::vector<std::shared_ptr<Unit>>& units);
-    static size_t configurations() { return trace_indices.size(); }
 
     const unsigned int id;
 
     Unit(const pugi::xml_node& node, unsigned int i, std::unordered_map<std::string, double> defaults={});
     std::vector<std::shared_ptr<Component>>& children() override;
     void reset();
+    void set_configuration(const std::shared_ptr<Component>& root);
+
     double get_next_event() const;
     void update_reliability(double dt);
     double current_reliability() const { return _current_reliability; }
@@ -90,16 +122,16 @@ class Unit : public Component
     virtual double activity(const DataPoint& data, const std::shared_ptr<FailureMechanism>& mechanism) const;
     void computeReliability(const std::vector<std::shared_ptr<FailureMechanism>>& mechanisms);
 
-    double aging_rate(int i) const;
-    double aging_rate() const { return aging_rate(index); }
+    double aging_rate(const config_t& c) const;
+    double aging_rate() const { return aging_rate(config); }
 
-    double reliability(double t) const { return reliability(index, t); }
-    virtual double reliability(int i, double t) const;
+    virtual double reliability(const config_t& c, double t) const;
+    double reliability(double t) const { return reliability(config, t); }
 
-    double inverse(double r) const { return inverse(index, r); }
-    virtual double inverse(int i, double r) const;
+    virtual double inverse(const config_t& c, double r) const;
+    double inverse(double r) const { return inverse(config, r); }
 
-    bool failed_in_trace(int i) const;
+    bool failed_in_trace(const config_t& c) const;
     bool failed() const { return _failed; }
     void failure();
 

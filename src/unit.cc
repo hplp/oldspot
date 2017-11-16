@@ -14,12 +14,14 @@
 #include <pugixml.hpp>
 #include <random>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
 #include "failure.hh"
 #include "reliability.hh"
 #include "trace.hh"
+#include "util.hh"
 
 namespace oldspot
 {
@@ -55,48 +57,11 @@ ostream& operator<<(ostream& stream, const Component& c)
     return c.dump(stream);
 }
 
-unordered_map<bitset<64>, int> Unit::trace_indices;
 char Unit::delim = ',';
-
-vector<vector<shared_ptr<Unit>>> Unit::init_configurations(const shared_ptr<Component>& root, vector<shared_ptr<Unit>>& units)
-{
-    int index = 0;
-    vector<vector<shared_ptr<Unit>>> names;
-    for (uint64_t failed = 0; failed < ((1ULL << units.size()) - 1); failed++)
-    {
-        for (const shared_ptr<Unit>& unit: units)
-            unit->_failed = (failed & (1 << unit->id)) > 0;
-        if (!root->failed())
-        {
-            vector<shared_ptr<Unit>> functional;
-            for (shared_ptr<Unit>& unit: units)
-                if (!unit->failed())
-                    functional.push_back(unit);
-            names.push_back(functional);
-
-            bitset<64> failed_bitset(failed);
-            trace_indices[failed_bitset] = index++;
-        }
-    }
-    // A system where failed is all true must be failed
-    return names;
-}
-
-void Unit::set_configuration(const vector<shared_ptr<Unit>>& units)
-{
-    bitset<64> config;
-    for (const shared_ptr<Unit>& unit: units)
-        config[unit->id] = unit->failed();
-    for (const shared_ptr<Unit>& unit: units)
-    {
-        unit->prev_index = unit->index;
-        unit->index = trace_indices.at(config);
-    }
-}
 
 Unit::Unit(const xml_node& node, unsigned int i, unordered_map<string, double> defaults)
     : Component(node.attribute("name").value()),
-      age(0), copies(1), _current_reliability(1), _failed(false), remaining(1), serial(true), index(-1), prev_index(-1), id(i)
+      age(0), copies(1), _current_reliability(1), _failed(false), remaining(1), serial(true), config({}), prev_config({}), id(i)
 {
     if (defaults.count("vdd") == 0)
         defaults["vdd"] = 1;
@@ -123,21 +88,24 @@ Unit::Unit(const xml_node& node, unsigned int i, unordered_map<string, double> d
     {
         for (const xml_node& child: node.children("trace"))
         {
-            traces.push_back(parseTrace(child.attribute("file").value(), delim));
+            vector<DataPoint> trace = parseTrace(child.attribute("file").value(), delim);
+            vector<string> failed_vector = split(child.attribute("failed").value(), ',');
+            unordered_set<string> failed(failed_vector.begin(), failed_vector.end());
             for (const auto& def: defaults)
-                for (DataPoint& data: traces.back())
+                for (DataPoint& data: trace)
                     if (data.data.count(def.first) == 0)
                         data.data[def.first] = def.second;
+            traces[failed] = trace;
         }
     }
     else
-        traces.push_back({{1, 1, defaults}});
-    for (vector<DataPoint>& trace: traces)
-        for (DataPoint& data: trace)
+    {
+        unordered_set<string> missing{""};
+        traces[missing] = {{1, 1, defaults}};
+    }
+    for (auto& trace: traces)
+        for (DataPoint& data: trace.second)
             data.data["frequency"] *= 1e6; // Expecting MHz; convert to Hz
-
-    reliabilities.resize(traces.size());
-    overall_reliabilities.resize(traces.size());
 }
 
 vector<shared_ptr<Component>>& Unit::children()
@@ -154,6 +122,39 @@ void Unit::reset()
     remaining = copies;
 }
 
+void Unit::set_configuration(const shared_ptr<Component>& root)
+{
+    if (_failed)
+        cerr << "warning: setting configuration for failed unit " << name << endl;
+    if (root->failed())
+        cerr << "warning: setting configuration of " << name << " for failed system" << endl;
+
+    unordered_set<string> failed;
+    conditional_walk(root, [&](shared_ptr<Component>& c){
+        if (c->failed())
+        {
+            failed.insert(c->name);
+            return false;
+        }
+        return true;
+    });
+
+    prev_config = config;
+    if (traces.count(failed) == 0)
+    {
+        string str = accumulate(next(failed.begin()), failed.end(), *failed.begin(),
+                                [](const string& a, const string& b){ return a + ',' + b; });
+        cerr << "warning: can't find configuration " + str + " for " + name << endl;
+        auto choice = traces.begin();
+        str = accumulate(next(choice->first.begin()), choice->first.end(), *(choice->first.begin()),
+                         [](const string& a, const string& b){ return a + ',' + b; });
+        cerr << "         using configuration " + str << endl;
+        config = choice->first;
+    }
+    else
+        config = failed;
+}
+
 double Unit::get_next_event() const
 {
     static random_device dev;
@@ -165,8 +166,8 @@ double Unit::get_next_event() const
 void Unit::update_reliability(double dt)
 {
     age += dt;
-    if (prev_index >= 0)
-        age -= inverse(prev_index, _current_reliability) - inverse(index, _current_reliability);
+    if (!prev_config.empty())
+        age -= inverse(prev_config, _current_reliability) - inverse(config, _current_reliability);
     _current_reliability = reliability(age);
 }
 
@@ -177,51 +178,46 @@ double Unit::activity(const DataPoint& data, const shared_ptr<FailureMechanism>&
 
 void Unit::computeReliability(const vector<shared_ptr<FailureMechanism>>& mechanisms)
 {
-    for (size_t i = 0; i < traces.size(); i++)
+    for (auto& trace: traces)
     {
         for (const shared_ptr<FailureMechanism> mechanism: mechanisms)
         {
-            vector<MTTFSegment> mttfs(traces[i].size());
-            for (size_t j = 0; j < traces[i].size(); j++)
+            vector<MTTFSegment> mttfs(trace.second.size());
+            for (size_t j = 0; j < trace.second.size(); j++)
             {
-                traces[i][j].data["activity"] = activity(traces[i][j], mechanism);
-                double dt = j > 0 ? traces[i][j].time - traces[i][j - 1].time : traces[i][j].time;
-                mttfs[j] = {dt, mechanism->timeToFailure(traces[i][j])};
+                trace.second[j].data["activity"] = activity(trace.second[j], mechanism);
+                double dt = j > 0 ? trace.second[j].time - trace.second[j - 1].time : trace.second[j].time;
+                mttfs[j] = {dt, mechanism->timeToFailure(trace.second[j])};
             }
-            reliabilities[i][mechanism] = mechanism->distribution(mttfs);
+            reliabilities[trace.first][mechanism] = mechanism->distribution(mttfs);
         }
-        overall_reliabilities[i] = reliabilities[i].begin()->second;
-        for (auto it = next(reliabilities[i].begin()); it != reliabilities[i].end(); ++it)
-            overall_reliabilities[i] *= it->second;
+        overall_reliabilities[trace.first] = reliabilities[trace.first].begin()->second;
+        for (auto it = next(reliabilities[trace.first].begin()); it != reliabilities[trace.first].end(); ++it)
+            overall_reliabilities[trace.first] *= it->second;
     }
 }
 
-double Unit::aging_rate(int i) const
+double Unit::aging_rate(const config_t& c) const
 {
-    if (failed_in_trace(i))
+    if (failed_in_trace(c))
         return 0;
     else
-        return overall_reliabilities[i].rate();
+        return overall_reliabilities.at(c).rate();
 }
 
-double Unit::reliability(int i, double t) const
+double Unit::reliability(const config_t& c, double t) const
 {
-    return overall_reliabilities[i](t);
+    return overall_reliabilities.at(c)(t);
 }
 
-double Unit::inverse(int i, double r) const
+double Unit::inverse(const config_t& c, double r) const
 {
-    return overall_reliabilities[i].inverse(r);
+    return overall_reliabilities.at(c).inverse(r);
 }
 
-bool Unit::failed_in_trace(int i) const
+bool Unit::failed_in_trace(const config_t& c) const
 {
-    auto result = find_if(trace_indices.begin(), trace_indices.end(),
-                          [&](pair<bitset<64>, int> a){ return a.second == i; });
-    if (result != trace_indices.end())
-        return result->first[id];
-    else
-        return false;
+    return c.count(name) > 0;
 }
 
 void Unit::failure()
@@ -231,7 +227,7 @@ void Unit::failure()
     {
         _current_reliability = 1;
         age = 0;
-        prev_index = -1;
+        prev_config = {};
     }
 }
 

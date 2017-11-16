@@ -64,8 +64,6 @@ vector<vector<shared_ptr<Unit>>> Unit::init_configurations(const shared_ptr<Comp
     vector<vector<shared_ptr<Unit>>> names;
     for (uint64_t failed = 0; failed < ((1ULL << units.size()) - 1); failed++)
     {
-        if (failed % 10000000 == 0)
-            cout << failed << endl;
         for (const shared_ptr<Unit>& unit: units)
             unit->_failed = (failed & (1 << unit->id)) > 0;
         if (!root->failed())

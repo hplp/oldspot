@@ -1,6 +1,7 @@
 #include "unit.hh"
 
 #include <algorithm>
+#include <bitset>
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
@@ -12,6 +13,7 @@
 #include <numeric>
 #include <pugixml.hpp>
 #include <random>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -53,32 +55,19 @@ ostream& operator<<(ostream& stream, const Component& c)
     return c.dump(stream);
 }
 
-map<vector<bool>, int> Unit::trace_indices;
+unordered_map<bitset<64>, int> Unit::trace_indices;
 char Unit::delim = ',';
-
-vector<bool> operator++(vector<bool>& n, int)
-{
-    vector<bool> r = n;
-    for (size_t i = 0; i < n.size(); i++)
-    {
-        if (!n[i])
-        {
-            n[i] = true;
-            return r;
-        }
-        n[i] = false;
-    }
-    return r;
-}
 
 vector<vector<shared_ptr<Unit>>> Unit::init_configurations(const shared_ptr<Component>& root, vector<shared_ptr<Unit>>& units)
 {
     int index = 0;
     vector<vector<shared_ptr<Unit>>> names;
-    for (vector<bool> failed(units.size()); !all_of(failed.begin(), failed.end(), [](bool b){ return b; }); failed++)
+    for (uint64_t failed = 0; failed < ((1ULL << units.size()) - 1); failed++)
     {
+        if (failed % 10000000 == 0)
+            cout << failed << endl;
         for (const shared_ptr<Unit>& unit: units)
-            unit->_failed = failed[unit->id];
+            unit->_failed = (failed & (1 << unit->id)) > 0;
         if (!root->failed())
         {
             vector<shared_ptr<Unit>> functional;
@@ -86,7 +75,9 @@ vector<vector<shared_ptr<Unit>>> Unit::init_configurations(const shared_ptr<Comp
                 if (!unit->failed())
                     functional.push_back(unit);
             names.push_back(functional);
-            trace_indices[failed] = index++;
+
+            bitset<64> failed_bitset(failed);
+            trace_indices[failed_bitset] = index++;
         }
     }
     // A system where failed is all true must be failed
@@ -95,7 +86,7 @@ vector<vector<shared_ptr<Unit>>> Unit::init_configurations(const shared_ptr<Comp
 
 void Unit::set_configuration(const vector<shared_ptr<Unit>>& units)
 {
-    vector<bool> config(units.size());
+    bitset<64> config;
     for (const shared_ptr<Unit>& unit: units)
         config[unit->id] = unit->failed();
     for (const shared_ptr<Unit>& unit: units)
@@ -105,7 +96,7 @@ void Unit::set_configuration(const vector<shared_ptr<Unit>>& units)
     }
 }
 
-Unit::Unit(const xml_node& node, unsigned int i, map<string, double> defaults)
+Unit::Unit(const xml_node& node, unsigned int i, unordered_map<string, double> defaults)
     : Component(node.attribute("name").value()),
       age(0), copies(1), _current_reliability(1), _failed(false), remaining(1), serial(true), index(-1), prev_index(-1), id(i)
 {
@@ -228,7 +219,7 @@ double Unit::inverse(int i, double r) const
 bool Unit::failed_in_trace(int i) const
 {
     auto result = find_if(trace_indices.begin(), trace_indices.end(),
-                          [&](pair<vector<bool>, int> a){ return a.second == i; });
+                          [&](pair<bitset<64>, int> a){ return a.second == i; });
     if (result != trace_indices.end())
         return result->first[id];
     else
@@ -294,9 +285,11 @@ Group::Group(const xml_node& node, vector<shared_ptr<Unit>>& units)
 
 bool Group::failed() const
 {
-    unsigned int f = count_if(_children.begin(), _children.end(),
-                              [](const shared_ptr<Component>& c){ return c->failed(); });
-    return f > failures || f >= _children.size();
+    unsigned int f = 0;
+    for (const shared_ptr<Component>& child: _children)
+        if (child->failed() && ++f > failures)
+            return true;
+    return false;
 }
 
 ostream& Group::dump(ostream& stream) const

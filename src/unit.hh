@@ -1,13 +1,14 @@
 #pragma once
 
+#include <bitset>
 #include <cstdint>
 #include <limits>
-#include <map>
 #include <memory>
 #include <ostream>
 #include <pugixml.hpp>
 #include <stack>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -54,7 +55,7 @@ class Component
 class Unit : public Component
 {
   private:
-    static std::map<std::vector<bool>, int> trace_indices;
+    static std::unordered_map<std::bitset<64>, int> trace_indices;
 
     double age;
     int copies;
@@ -67,7 +68,7 @@ class Unit : public Component
 
   protected:
     std::vector<std::vector<DataPoint>> traces;
-    std::vector<std::map<std::shared_ptr<FailureMechanism>, WeibullDistribution>> reliabilities;
+    std::vector<std::unordered_map<std::shared_ptr<FailureMechanism>, WeibullDistribution>> reliabilities;
     std::vector<WeibullDistribution> overall_reliabilities;
 
   public:
@@ -79,7 +80,7 @@ class Unit : public Component
 
     const unsigned int id;
 
-    Unit(const pugi::xml_node& node, unsigned int i, std::map<std::string, double> defaults={});
+    Unit(const pugi::xml_node& node, unsigned int i, std::unordered_map<std::string, double> defaults={});
     std::vector<std::shared_ptr<Component>>& children() override;
     void reset();
     double get_next_event() const;

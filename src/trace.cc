@@ -5,11 +5,11 @@
 #include <fstream>
 #include <iostream>
 #include <limits>
-#include <map>
 #include <numeric>
 #include <stdexcept>
 #include <sstream>
 #include <string>
+#include <unordered_map>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -51,7 +51,7 @@ vector<DataPoint> parseTrace(const string fname, char delimiter)
     double prev = 0;
     while (getline(file, line))
     {
-        map<string, double> data;
+        unordered_map<string, double> data;
         vector<string> values = split(line, delimiter);
         double time = stod(values[0]); // First column should be time
         for (size_t i = 0; i < quantities.size(); i++)

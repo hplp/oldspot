@@ -153,6 +153,8 @@ int main(int argc, char* argv[])
         cout << "Creating failure dependency graph..." << endl;
     shared_ptr<Component> root = make_shared<Group>(doc.child("group"), units);
 
+    if (v)
+        cout << "Computing aging rates..." << endl;
     for (const shared_ptr<Unit>& unit: units)
         unit->computeReliability(mechanisms);
 

@@ -25,7 +25,7 @@ namespace std
       public:
         size_t operator()(const unordered_set<string>& strs) const
         {
-            size_t result = 0;
+            size_t result = 58271;
             for (const string& s: strs)
                 result ^= strs.hash_function()(s);
             return result;

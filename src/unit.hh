@@ -123,7 +123,7 @@ class Unit : public Component
     double current_reliability() const { return _current_reliability; }
 
     virtual double activity(const DataPoint& data, const std::shared_ptr<FailureMechanism>& mechanism) const;
-    void computeReliability(const std::vector<std::shared_ptr<FailureMechanism>>& mechanisms);
+    void compute_reliability(const std::vector<std::shared_ptr<FailureMechanism>>& mechanisms);
 
     double aging_rate(const config_t& c) const;
     double aging_rate() const { return aging_rate(config); }

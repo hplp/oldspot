@@ -196,7 +196,7 @@ double Unit::activity(const DataPoint& data, const shared_ptr<FailureMechanism>&
     return data.data.at("activity");
 }
 
-void Unit::computeReliability(const vector<shared_ptr<FailureMechanism>>& mechanisms)
+void Unit::compute_reliability(const vector<shared_ptr<FailureMechanism>>& mechanisms)
 {
     for (auto& trace: traces)
     {

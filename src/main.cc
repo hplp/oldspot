@@ -156,7 +156,7 @@ int main(int argc, char* argv[])
     if (v)
         cout << "Computing aging rates..." << endl;
     for (const shared_ptr<Unit>& unit: units)
-        unit->computeReliability(mechanisms);
+        unit->compute_reliability(mechanisms);
 
     // Monte Carlo sim to get overall failure distribution
     for (int i = 0; i < n; i++)

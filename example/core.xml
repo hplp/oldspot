@@ -1,0 +1,13 @@
+<?xml version="1.0" ?>
+
+<unit type="unit" name="core">
+    <default vdd="1.1" />
+    <default temperature="350" />
+    <default frequency="1000" />
+    <redundancy type="serial" count="1" />
+    <trace file="example/one.trace" />
+</unit>
+
+<group name="system" failures="0">
+    <unit name="core" />
+</group>

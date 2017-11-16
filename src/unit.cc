@@ -205,7 +205,7 @@ void Unit::compute_reliability(const vector<shared_ptr<FailureMechanism>>& mecha
             vector<MTTFSegment> mttfs(trace.second.size());
             for (size_t j = 0; j < trace.second.size(); j++)
             {
-                trace.second[j].data["activity"] = activity(trace.second[j], mechanism);
+                trace.second[j].data["activity"] = min(activity(trace.second[j], mechanism), 1.0);
                 double dt = j > 0 ? trace.second[j].time - trace.second[j - 1].time : trace.second[j].time;
                 mttfs[j] = {dt, mechanism->timeToFailure(trace.second[j])};
             }

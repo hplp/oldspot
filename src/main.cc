@@ -68,7 +68,7 @@ int main(int argc, char* argv[])
 
     try
     {
-        vector<string> units = {"seconds", "minutes", "hours", "days", "weeks", "months", "years"};
+        vector<string> units{"seconds", "minutes", "hours", "days", "weeks", "months", "years"};
         ValuesConstraint<string> unit_values(units);
 
         CmdLine cmd("Compute the reliability distribution of a chip", ' ', "0.1");

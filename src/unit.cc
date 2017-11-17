@@ -261,14 +261,21 @@ double Core::activity(const DataPoint& data, const shared_ptr<FailureMechanism>&
     return data.data.at("power")/data.data.at("peak_power");
 }
 
-double Logic::activity(const DataPoint& data, const shared_ptr<FailureMechanism>&) const
+double Logic::activity(const DataPoint& data, const shared_ptr<FailureMechanism>& mechanism) const
 {
-    return data.data.at("activity")/(data.duration*data.data.at("frequency"));
+    double duty_cycle = min(data.data.at("activity")/(data.duration*data.data.at("frequency")), 1.0);
+    if (mechanism == NBTI::model())
+        return 1 - duty_cycle*duty_cycle/2;
+    else
+        return duty_cycle;
 }
 
 double Memory::activity(const DataPoint& data, const shared_ptr<FailureMechanism>& mechanism) const
 {
-    return 0;
+    if (mechanism == HCI::model())
+        return 0;
+    else
+        return 1;
 }
 
 Group::Group(const xml_node& node, vector<shared_ptr<Unit>>& units)

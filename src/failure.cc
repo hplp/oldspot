@@ -23,7 +23,6 @@ const shared_ptr<FailureMechanism> NBTI::model()
 
 double NBTI::degradation(double t, double vdd, double dVth, double temperature, double duty_cycle) const
 {
-    duty_cycle = 1 - duty_cycle*duty_cycle/2;
     duty_cycle = pow(duty_cycle/(1 + sqrt((1 - duty_cycle)/2)), 1.0/6.0);
     double V = vdd - Vt0 - dVth;
     if (V < 0)

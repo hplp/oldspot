@@ -15,6 +15,12 @@ namespace oldspot
 
 using namespace std;
 
+const shared_ptr<FailureMechanism> NBTI::model()
+{
+    static shared_ptr<NBTI> nbti = make_shared<NBTI>();
+    return nbti;
+}
+
 double NBTI::degradation(double t, double vdd, double dVth, double temperature, double duty_cycle) const
 {
     duty_cycle = 1 - duty_cycle*duty_cycle/2;
@@ -57,9 +63,21 @@ double NBTI::timeToFailure(const DataPoint& data, double fail) const
         return linterp(dVth_fail, {dVth_prev, t - dt}, {dVth, t});
 }
 
+const shared_ptr<FailureMechanism> EM::model()
+{
+    static shared_ptr<EM> em = make_shared<EM>();
+    return em;
+}
+
 double EM::timeToFailure(const DataPoint& data, double fail) const
 {
     return A*pow(data.data.at("power")/data.data.at("vdd")/(w*h), -n)*exp(Ea/(k_B*data.data.at("temperature")));
+}
+
+const shared_ptr<FailureMechanism> HCI::model()
+{
+    static shared_ptr<HCI> hci = make_shared<HCI>();
+    return hci;
 }
 
 double HCI::timeToFailure(const DataPoint& data, double fail) const
@@ -77,6 +95,12 @@ double HCI::timeToFailure(const DataPoint& data, double fail) const
     double t = pow(dVth_fail/(A_HCI*exp(Eox/E0)*exp(-phi_it/eV_J/(q*lambda*Em))), 1/n)/(data.data.at("activity")*data.data.at("frequency"));
 
     return t;
+}
+
+const shared_ptr<FailureMechanism> TDDB::model()
+{
+    static shared_ptr<TDDB> tddb = make_shared<TDDB>();
+    return tddb;
 }
 
 double TDDB::timeToFailure(const DataPoint& data, double fail) const

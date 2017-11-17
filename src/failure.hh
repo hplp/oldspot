@@ -60,7 +60,7 @@ class NBTI : public FailureMechanism
 
   public:
     NBTI() : FailureMechanism("NBTI") {}
-    static const std::shared_ptr<FailureMechanism> model() { static NBTI nbti; return std::make_shared<NBTI>(nbti); }
+    static const std::shared_ptr<FailureMechanism> model();
     double degradation(double t, double vdd, double dVth, double temperature, double duty_cycle) const;
     double timeToFailure(const DataPoint& data, double fail=std::numeric_limits<double>::signaling_NaN()) const override;
 };
@@ -77,7 +77,7 @@ class EM : public FailureMechanism
 
   public:
     EM() : FailureMechanism("EM") {}
-    static const std::shared_ptr<FailureMechanism> model() { static EM em; return std::make_shared<EM>(em); }
+    static const std::shared_ptr<FailureMechanism> model();
     double timeToFailure(const DataPoint& data, double fail=std::numeric_limits<double>::signaling_NaN()) const override;
 };
 
@@ -85,7 +85,6 @@ class HCI : public FailureMechanism
 {
   private:
     // Low-level parameters (chosen from [8])
-//    const double Ea = 0.1;              // eV
     const double E0 = 0.8;              // V/nm
     const double K = 1.7e8;             // nm/C^0.5
     const double A_bulk = 0.005;
@@ -97,7 +96,7 @@ class HCI : public FailureMechanism
 
   public:
     HCI() : FailureMechanism("HCI") {}
-    static const std::shared_ptr<FailureMechanism> model() { static HCI hci; return std::make_shared<HCI>(hci); }
+    static const std::shared_ptr<FailureMechanism> model();
     double degradation(double t, double vdd, double temperature, double frequency, double duty_cycle) const;
     double timeToFailure(const DataPoint& data, double fail=std::numeric_limits<double>::signaling_NaN()) const override;
 };
@@ -114,7 +113,7 @@ class TDDB : public FailureMechanism
 
   public:
     TDDB() : FailureMechanism("TDDB") {}
-    static const std::shared_ptr<FailureMechanism> model() { static TDDB tddb; return std::make_shared<TDDB>(tddb); }
+    static const std::shared_ptr<FailureMechanism> model();
     double timeToFailure(const DataPoint& data, double fail=std::numeric_limits<double>::signaling_NaN()) const override;
 };
 

@@ -212,11 +212,13 @@ int main(int argc, char* argv[])
     cout << "MTTFs:" << endl;
     cout << root->name << ": " << convert_time(root->mttf(), time_units)
                        << " (" << convert_time(root->mttf_interval().first, time_units)
-                       << ',' << convert_time(root->mttf_interval().second, time_units) << ')' << endl;
+                       << ',' << convert_time(root->mttf_interval().second, time_units) << ") "
+                       << '[' << root->ttfs.size() << " failures]" << endl;
     for (const shared_ptr<Unit>& unit: units)
         cout << unit->name << ": " << convert_time(unit->mttf(), time_units)
                            << " (" << convert_time(unit->mttf_interval().first, time_units)
-                           << ',' << convert_time(unit->mttf_interval().second, time_units) << ')' << endl;
+                           << ',' << convert_time(unit->mttf_interval().second, time_units) << ") "
+                           << '[' << unit->ttfs.size() << " failures]" << endl;
 
     if (!dist_file.empty())
     {

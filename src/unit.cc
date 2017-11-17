@@ -268,10 +268,7 @@ double Logic::activity(const DataPoint& data, const shared_ptr<FailureMechanism>
 
 double Memory::activity(const DataPoint& data, const shared_ptr<FailureMechanism>& mechanism) const
 {
-    if (mechanism == HCI::model())
-        return 0;
-    else
-        return 1;
+    return 0;
 }
 
 Group::Group(const xml_node& node, vector<shared_ptr<Unit>>& units)

@@ -108,6 +108,7 @@ class Unit : public Component
 
   public:
     static char delim;
+    static const config_t fresh;
 
     static std::vector<std::shared_ptr<Unit>> parents_failed(const std::shared_ptr<Component>& root, const std::vector<std::shared_ptr<Unit>>& units);
 
@@ -127,6 +128,7 @@ class Unit : public Component
 
     double aging_rate(const config_t& c) const;
     double aging_rate() const { return aging_rate(config); }
+    double aging_rate(const std::shared_ptr<FailureMechanism>& mechanism) const;
 
     virtual double reliability(const config_t& c, double t) const;
     double reliability(double t) const { return reliability(config, t); }

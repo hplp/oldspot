@@ -66,6 +66,7 @@ ostream& operator<<(ostream& stream, const Component& c)
 }
 
 char Unit::delim = ',';
+const Unit::config_t Unit::fresh = {""};
 
 vector<shared_ptr<Unit>> Unit::parents_failed(const shared_ptr<Component>& root, const vector<shared_ptr<Unit>>& units)
 {
@@ -123,8 +124,8 @@ Unit::Unit(const xml_node& node, unsigned int i, unordered_map<string, double> d
             traces[failed] = trace;
         }
     }
-    if (traces.count({""}) == 0)
-        traces[{""}] = {{1, 1, defaults}};
+    if (traces.count(fresh) == 0)
+        traces[fresh] = {{1, 1, defaults}};
     for (auto& trace: traces)
         for (DataPoint& data: trace.second)
             data.data["frequency"] *= 1e6; // Expecting MHz; convert to Hz
@@ -167,7 +168,7 @@ void Unit::set_configuration(const shared_ptr<Component>& root)
     if (traces.count(config) == 0)
     {
         cerr << "warning: can't find configuration " << config << " for " + name << endl;
-        config = {""};
+        config = fresh;
         cerr << "         using configuration " << config << endl;
     }
 }
@@ -223,6 +224,11 @@ double Unit::aging_rate(const config_t& c) const
         return 0;
     else
         return overall_reliabilities.at(c).rate();
+}
+
+double Unit::aging_rate(const std::shared_ptr<FailureMechanism>& mechanism) const
+{
+    return reliabilities.at(fresh).at(mechanism).rate();
 }
 
 double Unit::reliability(const config_t& c, double t) const

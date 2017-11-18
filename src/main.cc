@@ -5,6 +5,7 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <iterator>
 #include <limits>
 #include <map>
 #include <memory>
@@ -13,6 +14,7 @@
 #include <random>
 #include <string>
 #include <tclap/CmdLine.h>
+#include <unordered_map>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -62,7 +64,7 @@ int main(int argc, char* argv[])
     using namespace TCLAP;
 
     int n;
-    bool print_rates, v;
+    bool v, rates;
     string time_units, dist_file;
     vector<shared_ptr<FailureMechanism>> mechanisms;
     xml_document doc;
@@ -74,7 +76,7 @@ int main(int argc, char* argv[])
 
         CmdLine cmd("Compute the reliability distribution of a chip", ' ', "0.1");
         SwitchArg verbose("v", "verbose", "Display progress output", cmd);
-        SwitchArg rates("", "print-aging-rates", "Print aging rate of each unit for each trace", cmd);
+        SwitchArg separate("", "separate-aging-rates", "Display a second table with aging rates separated by mechanism per unit (only works for fresh configuration)", cmd);
         ValueArg<string> phenomena("", "aging-mechanisms", "Comma-separated list of aging mechanisms to include or \"all\" for all of them", false, "all", "mechanisms", cmd);
         ValueArg<char> delimiter("", "trace-delimiter", "One-character delimiter for data in input trace files (default: ,)", false, ',', "delim", cmd);
         ValueArg<string> time("", "time-units", "Units for displaying time to failure (default: hours)", false, "hours", &unit_values, cmd);
@@ -94,8 +96,8 @@ int main(int argc, char* argv[])
         Unit::delim = delimiter.getValue();
         n = iterations.getValue();
         time_units = time.getValue();
-        print_rates = rates.getValue();
         dist_file = dist_dump.getValue();
+        rates = separate.getValue();
         v = verbose.getValue();
 
         string p = phenomena.getValue();
@@ -209,16 +211,40 @@ int main(int argc, char* argv[])
         }
     }
 
-    cout << "MTTFs:" << endl;
-    cout << root->name << ": " << convert_time(root->mttf(), time_units)
-                       << " (" << convert_time(root->mttf_interval().first, time_units)
-                       << ',' << convert_time(root->mttf_interval().second, time_units) << ") "
-                       << '[' << root->ttfs.size() << " failures]" << endl;
-    for (const shared_ptr<Unit>& unit: units)
-        cout << unit->name << ": " << convert_time(unit->mttf(), time_units)
-                           << " (" << convert_time(unit->mttf_interval().first, time_units)
-                           << ',' << convert_time(unit->mttf_interval().second, time_units) << ") "
-                           << '[' << unit->ttfs.size() << " failures]" << endl;
+    sort(units.begin(), units.end(), [](const shared_ptr<Unit>& a, const shared_ptr<Unit>& b) {
+        return b->ttfs.size() < a->ttfs.size();
+    });
+    vector<string> rows{root->name};
+    vector<string> cols{"MTTF", "Failures", "Aging Rate"};
+    transform(units.begin(), units.end(), back_inserter(rows), [](const shared_ptr<Unit>& u){ return u->name; });
+    unordered_map<string, unordered_map<string, double>> data;
+    data[root->name]["MTTF"] = convert_time(root->mttf(), time_units);
+    data[root->name]["Failures"] = root->ttfs.size();
+    data[root->name]["Aging Rate"] = numeric_limits<double>::quiet_NaN();
+    for (const shared_ptr<Unit>& u: units)
+    {
+        data[u->name]["MTTF"] = convert_time(u->mttf(), time_units);
+        data[u->name]["Failures"] = u->ttfs.size();
+        data[u->name]["Aging Rate"] = convert_time(u->aging_rate(Unit::fresh), time_units);
+    }
+    print_table(rows, cols, data);
+
+    if (rates)
+    {
+        sort(units.begin(), units.end(), [&](const shared_ptr<Unit>& a, const shared_ptr<Unit>& b) {
+            return b->aging_rate(Unit::fresh) < a->aging_rate(Unit::fresh);
+        });
+        vector<string> rows;
+        vector<string> cols;
+        transform(units.begin(), units.end(), back_inserter(rows), [](const shared_ptr<Unit>& u){ return u->name; });
+        transform(mechanisms.begin(), mechanisms.end(), back_inserter(cols), [](const shared_ptr<FailureMechanism>& m){ return m->name; });
+        data.clear();
+        for (const shared_ptr<Unit>& u: units)
+            for (const shared_ptr<FailureMechanism>& m: mechanisms)
+                data[u->name][m->name] = convert_time(u->aging_rate(m), time_units);
+        cout << endl;
+        print_table(rows, cols, data);
+    }
 
     if (!dist_file.empty())
     {

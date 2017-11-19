@@ -36,11 +36,14 @@ WeibullDistribution::WeibullDistribution(double b, const vector<MTTFSegment>& mt
               [this](const MTTFSegment& a){ return a.mttf/tgamma(1/beta + 1); });
     
     // Accumulate rates into average rate [1]
-    alpha = inner_product(mttfs.begin(), mttfs.end(), alphas.begin(), 0.0,
-                          plus<double>(),
-                          [](const MTTFSegment& m, double a){ return m.duration/a; })/
-            accumulate(mttfs.begin(), mttfs.end(), 0.0,
-                       [](double a, MTTFSegment b){ return a + b.duration; });
+    alpha = 0.0;
+    double total_time = 0.0;
+    for (const MTTFSegment& mttf: mttfs)
+    {
+        alpha += mttf.duration/mttf.mttf;
+        total_time += mttf.duration;
+    }
+    alpha /= total_time;
 
     // Invert to resemble actual Weibull alpha
     alpha = 1/alpha;

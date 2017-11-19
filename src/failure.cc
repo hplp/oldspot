@@ -38,11 +38,11 @@ double NBTI::degradation(double t, double vdd, double dVth, double temperature, 
     return duty_cycle*0.027e-12*(dN_IT + dN_HT);
 }
 
-double NBTI::timeToFailure(const DataPoint& data, double fail) const
+double NBTI::timeToFailure(const DataPoint& data, double duty_cycle, double fail) const
 {
     if (isnan(fail))
         fail = fail_default;
-    if (data.data.at("activity") == 0)
+    if (duty_cycle == 0)
         return numeric_limits<double>::infinity();
 
     // Create a linear approximation of dVth(t)
@@ -52,7 +52,7 @@ double NBTI::timeToFailure(const DataPoint& data, double fail) const
     for (; dVth < dVth_fail; t += dt)
     {
         dVth_prev = dVth;
-        dVth = degradation(t, data.data.at("vdd"), dVth, data.data.at("temperature"), data.data.at("activity"));
+        dVth = degradation(t, data.data.at("vdd"), dVth, data.data.at("temperature"), duty_cycle);
     }
     t -= dt;
 
@@ -68,7 +68,7 @@ const shared_ptr<FailureMechanism> EM::model()
     return em;
 }
 
-double EM::timeToFailure(const DataPoint& data, double fail) const
+double EM::timeToFailure(const DataPoint& data, double, double) const
 {
     return A*pow(data.data.at("power")/data.data.at("vdd")/(w*h), -n)*exp(Ea/(k_B*data.data.at("temperature")));
 }
@@ -79,7 +79,7 @@ const shared_ptr<FailureMechanism> HCI::model()
     return hci;
 }
 
-double HCI::timeToFailure(const DataPoint& data, double fail) const
+double HCI::timeToFailure(const DataPoint& data, double duty_cycle, double fail) const
 {
     if (isnan(fail))
         fail = fail_default;
@@ -91,7 +91,7 @@ double HCI::timeToFailure(const DataPoint& data, double fail) const
     double Em = (vdd - vdsat)/l;
     double Eox = (vdd - Vt0_n)/tox;
     double A_HCI = q/Cox*K*sqrt(Cox*(vdd - Vt0_n));
-    double t = pow(dVth_fail/(A_HCI*exp(Eox/E0)*exp(-phi_it/eV_J/(q*lambda*Em))), 1/n)/(data.data.at("activity")*data.data.at("frequency"));
+    double t = pow(dVth_fail/(A_HCI*exp(Eox/E0)*exp(-phi_it/eV_J/(q*lambda*Em))), 1/n)/(duty_cycle*data.data.at("frequency"));
 
     return t;
 }
@@ -102,7 +102,7 @@ const shared_ptr<FailureMechanism> TDDB::model()
     return tddb;
 }
 
-double TDDB::timeToFailure(const DataPoint& data, double fail) const
+double TDDB::timeToFailure(const DataPoint& data, double, double) const
 {
     double T = data.data.at("temperature");
     return pow(data.data.at("vdd"), a - b*T)*exp((X + Y/T + Z*T)/(k_B*T));

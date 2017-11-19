@@ -199,16 +199,16 @@ double Unit::activity(const DataPoint& data, const shared_ptr<FailureMechanism>&
 
 void Unit::compute_reliability(const vector<shared_ptr<FailureMechanism>>& mechanisms)
 {
-    for (auto& trace: traces)
+    for (const auto& trace: traces)
     {
         for (const shared_ptr<FailureMechanism> mechanism: mechanisms)
         {
             vector<MTTFSegment> mttfs(trace.second.size());
             for (size_t j = 0; j < trace.second.size(); j++)
             {
-                trace.second[j].data["activity"] = min(activity(trace.second[j], mechanism), 1.0);
+                double duty_cycle = min(activity(trace.second[j], mechanism), 1.0);
                 double dt = j > 0 ? trace.second[j].time - trace.second[j - 1].time : trace.second[j].time;
-                mttfs[j] = {dt, mechanism->timeToFailure(trace.second[j])};
+                mttfs[j] = {dt, mechanism->timeToFailure(trace.second[j], duty_cycle)};
             }
             reliabilities[trace.first][mechanism] = mechanism->distribution(mttfs);
         }

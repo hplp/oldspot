@@ -35,7 +35,7 @@ class FailureMechanism
     const std::string name;
 
     FailureMechanism(const std::string& _n) : name(_n) {}
-    virtual double timeToFailure(const DataPoint& data, double fail=std::numeric_limits<double>::signaling_NaN()) const = 0;
+    virtual double timeToFailure(const DataPoint& data, double duty_cycle, double fail=std::numeric_limits<double>::signaling_NaN()) const = 0;
     virtual WeibullDistribution distribution(const std::vector<MTTFSegment>& mttfs) const
     {
         return WeibullDistribution(beta, mttfs);
@@ -62,7 +62,7 @@ class NBTI : public FailureMechanism
     NBTI() : FailureMechanism("NBTI") {}
     static const std::shared_ptr<FailureMechanism> model();
     double degradation(double t, double vdd, double dVth, double temperature, double duty_cycle) const;
-    double timeToFailure(const DataPoint& data, double fail=std::numeric_limits<double>::signaling_NaN()) const override;
+    double timeToFailure(const DataPoint& data, double duty_cycle, double fail=std::numeric_limits<double>::signaling_NaN()) const override;
 };
 
 class EM : public FailureMechanism
@@ -78,7 +78,7 @@ class EM : public FailureMechanism
   public:
     EM() : FailureMechanism("EM") {}
     static const std::shared_ptr<FailureMechanism> model();
-    double timeToFailure(const DataPoint& data, double fail=std::numeric_limits<double>::signaling_NaN()) const override;
+    double timeToFailure(const DataPoint& data, double duty_cycle, double fail=std::numeric_limits<double>::signaling_NaN()) const override;
 };
 
 class HCI : public FailureMechanism
@@ -98,7 +98,7 @@ class HCI : public FailureMechanism
     HCI() : FailureMechanism("HCI") {}
     static const std::shared_ptr<FailureMechanism> model();
     double degradation(double t, double vdd, double temperature, double frequency, double duty_cycle) const;
-    double timeToFailure(const DataPoint& data, double fail=std::numeric_limits<double>::signaling_NaN()) const override;
+    double timeToFailure(const DataPoint& data, double duty_cycle, double fail=std::numeric_limits<double>::signaling_NaN()) const override;
 };
 
 class TDDB : public FailureMechanism
@@ -114,7 +114,7 @@ class TDDB : public FailureMechanism
   public:
     TDDB() : FailureMechanism("TDDB") {}
     static const std::shared_ptr<FailureMechanism> model();
-    double timeToFailure(const DataPoint& data, double fail=std::numeric_limits<double>::signaling_NaN()) const override;
+    double timeToFailure(const DataPoint& data, double duty_cycle, double fail=std::numeric_limits<double>::signaling_NaN()) const override;
 };
 
 } // namespace oldspot

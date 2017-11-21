@@ -80,6 +80,7 @@ class Component
     virtual std::vector<std::shared_ptr<Component>>& children() = 0;
     virtual double mttf() const;
     virtual std::pair<double, double> mttf_interval(double confidence=0.95) const;
+    virtual double aging_rate() const { return std::numeric_limits<double>::quiet_NaN(); }
     virtual bool failed() const = 0;
 
     virtual std::ostream& dump(std::ostream& stream) const = 0;
@@ -127,7 +128,7 @@ class Unit : public Component
     void compute_reliability(const std::vector<std::shared_ptr<FailureMechanism>>& mechanisms);
 
     double aging_rate(const config_t& c) const;
-    double aging_rate() const { return aging_rate(config); }
+    double aging_rate() const override { return aging_rate(fresh); }
     double aging_rate(const std::shared_ptr<FailureMechanism>& mechanism) const;
 
     virtual double reliability(const config_t& c, double t) const;

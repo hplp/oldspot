@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <cstring>
 #include <fstream>
+#include <functional>
 #include <iomanip>
 #include <iostream>
 #include <iterator>
@@ -27,6 +28,20 @@
 using namespace oldspot;
 using namespace pugi;
 using namespace std;
+
+struct OutputData
+{
+    const string name;
+    const function<double(const shared_ptr<Component>&)> funct;
+
+    OutputData(const string& n, function<double(const shared_ptr<Component>&)> f)
+               : name(n), funct(f)
+    {}
+    OutputData() : OutputData("<unknown data>", [](const shared_ptr<Component>& c){ return numeric_limits<double>::quiet_NaN(); })
+    {}
+
+    double operator()(const shared_ptr<Component>& c) { return funct(c); }
+};
 
 inline bool node_is(const xml_node& node, const string& type)
 {
@@ -72,6 +87,7 @@ int main(int argc, char* argv[])
     CmdLine cmd("Compute the reliability distribution of a chip", ' ', "0.1");
     SwitchArg verbose("v", "verbose", "Display progress output", cmd);
     SwitchArg separate("", "separate-aging-rates", "Display a second table with aging rates separated by mechanism per unit (only works for fresh configuration)", cmd);
+    ValueArg<string> values("", "print-values", "Values to display in output table (default: MTTF,Failures", false, "mttf,failures", "values", cmd);
     ValueArg<string> phenomena("", "aging-mechanisms", "Comma-separated list of aging mechanisms to include or \"all\" for all of them", false, "all", "mechanisms", cmd);
     ValueArg<char> delimiter("", "trace-delimiter", "One-character delimiter for data in input trace files (default: ,)", false, ',', "delim", cmd);
     ValueArg<string> time("", "time-units", "Units for displaying time to failure (default: hours)", false, "hours", &time_constraint, cmd);
@@ -99,13 +115,12 @@ int main(int argc, char* argv[])
 
     Unit::delim = delimiter.getValue();
 
-    string p = phenomena.getValue();
-    transform(p.begin(), p.end(), p.begin(), ::tolower);
-    if (p == "all")
+    transform(phenomena.getValue().begin(), phenomena.getValue().end(), phenomena.getValue().begin(), ::tolower);
+    if (phenomena.getValue() == "all")
         mechanisms = {NBTI::model(), EM::model(), HCI::model(), TDDB::model()};
     else
     {
-        for (const string& token: split(p, ','))
+        for (const string& token: split(phenomena.getValue(), ','))
         {
             if (token == "nbti")
                 mechanisms.push_back(NBTI::model());
@@ -204,34 +219,39 @@ int main(int argc, char* argv[])
         }
     }
 
+    unordered_map<string, OutputData> outputs = {
+        {"mttf", {"MTTF", [&](const shared_ptr<Component>& c){ return convert_time(c->mttf(), time.getValue()); }}},
+        {"failures", {"Failures", [](const shared_ptr<Component>& c){ return c->ttfs.size(); }}},
+        {"alpha", {"Alpha", [&](const shared_ptr<Component>& c){ return convert_time(c->aging_rate(), time.getValue()); }}}
+    };
+    vector<string> tokens = split(values.getValue(), ',');
+    vector<string> rows{root->name};
+    vector<string> cols;
+    transform(values.getValue().begin(), values.getValue().end(), values.getValue().begin(), ::tolower);
+    transform(tokens.begin(), tokens.end(), back_inserter(cols), [&](const string& token){ return outputs[token].name; });
+    transform(units.begin(), units.end(), back_inserter(rows), [](const shared_ptr<Unit>& u){ return u->name; });
+    unordered_map<string, unordered_map<string, double>> data;
     sort(units.begin(), units.end(), [](const shared_ptr<Unit>& a, const shared_ptr<Unit>& b) {
         return b->ttfs.size() < a->ttfs.size();
     });
-    vector<string> rows{root->name};
-    vector<string> cols{"MTTF", "Failures", "Aging Rate"};
-    transform(units.begin(), units.end(), back_inserter(rows), [](const shared_ptr<Unit>& u){ return u->name; });
-    unordered_map<string, unordered_map<string, double>> data;
-    data[root->name]["MTTF"] = convert_time(root->mttf(), time.getValue());
-    data[root->name]["Failures"] = root->ttfs.size();
-    data[root->name]["Aging Rate"] = numeric_limits<double>::quiet_NaN();
-    for (const shared_ptr<Unit>& u: units)
+    for (const string& token: tokens)
     {
-        data[u->name]["MTTF"] = convert_time(u->mttf(), time.getValue());
-        data[u->name]["Failures"] = u->ttfs.size();
-        data[u->name]["Aging Rate"] = convert_time(u->aging_rate(Unit::fresh), time.getValue());
+        data[root->name][outputs[token].name] = outputs[token](root);
+        for (const shared_ptr<Unit>& u: units)
+            data[u->name][outputs[token].name] = outputs[token](u);
     }
     print_table(rows, cols, data);
 
     if (separate.getValue())
     {
-        sort(units.begin(), units.end(), [&](const shared_ptr<Unit>& a, const shared_ptr<Unit>& b) {
-            return b->aging_rate(Unit::fresh) < a->aging_rate(Unit::fresh);
-        });
         vector<string> rows;
         vector<string> cols;
         transform(units.begin(), units.end(), back_inserter(rows), [](const shared_ptr<Unit>& u){ return u->name; });
         transform(mechanisms.begin(), mechanisms.end(), back_inserter(cols), [](const shared_ptr<FailureMechanism>& m){ return m->name; });
         data.clear();
+        sort(units.begin(), units.end(), [&](const shared_ptr<Unit>& a, const shared_ptr<Unit>& b) {
+            return b->aging_rate(Unit::fresh) < a->aging_rate(Unit::fresh);
+        });
         for (const shared_ptr<Unit>& u: units)
             for (const shared_ptr<FailureMechanism>& m: mechanisms)
                 data[u->name][m->name] = convert_time(u->aging_rate(m), time.getValue());

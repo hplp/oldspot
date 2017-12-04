@@ -48,7 +48,7 @@ double NBTI::degradation(double t, double vdd, double dVth, double temperature, 
         V = 0;
     }
     double E_AIT = 2.0/3.0*(p.at("E_Akf") - p.at("E_Akr")) + p.at("E_ADH2")/6;
-    double dN_IT = p.at("A")*pow(V, p.at("Gamma_IT"))*exp(-p.at("E_AIT")/(k_B*temperature))*pow(t, 1.0/6.0);
+    double dN_IT = p.at("A")*pow(V, p.at("Gamma_IT"))*exp(-E_AIT/(k_B*temperature))*pow(t, 1.0/6.0);
     double dN_HT = p.at("B")*pow(V, p.at("Gamma_HT"))*exp(-p.at("E_AHT")/(k_B*temperature));
 
     return duty_cycle*0.027e-12*(dN_IT + dN_HT);
@@ -78,9 +78,18 @@ double NBTI::timeToFailure(const DataPoint& data, double duty_cycle, double fail
         return linterp(dVth_fail, {dVth_prev, t - dt}, {dVth, t});
 }
 
+EM::EM() : FailureMechanism("EM")
+{
+    p["n"] = 2;
+    p["Ea"] = 0.8;      // eV
+    p["w"] = 4.5e-7;    // m
+    p["h"] = 1.2e-6;    // m
+    p["A"] = 3.22e21;   // extracted from [?]
+}
+
 double EM::timeToFailure(const DataPoint& data, double, double) const
 {
-    return A*pow(data.data.at("power")/data.data.at("vdd")/(w*h), -n)*exp(Ea/(k_B*data.data.at("temperature")));
+    return p.at("A")*pow(data.data.at("power")/data.data.at("vdd")/(p.at("w")*p.at("h")), -p.at("n"))*exp(p.at("Ea")/(k_B*data.data.at("temperature")));
 }
 
 double HCI::timeToFailure(const DataPoint& data, double duty_cycle, double fail) const

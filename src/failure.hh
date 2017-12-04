@@ -51,16 +51,8 @@ class NBTI : public FailureMechanism
 
 class EM : public FailureMechanism
 {
-  private:
-    // Low-level parameters (chosen from [7])
-    const double n = 2;
-    const double Ea = 0.8;      // eV
-    const double w = 4.5e-7;    // m
-    const double h = 1.2e-6;    // m
-    const double A = 3.22e21;   // Extracted from [6]
-
   public:
-    EM() : FailureMechanism("EM") {}
+    EM();
     double timeToFailure(const DataPoint& data, double duty_cycle, double fail=std::numeric_limits<double>::signaling_NaN()) const override;
 };
 

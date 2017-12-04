@@ -70,7 +70,7 @@ class HCI : public FailureMechanism
     const double n = 0.45;
 
   public:
-    HCI() : FailureMechanism("HCI") {}
+    HCI();
     double degradation(double t, double vdd, double temperature, double frequency, double duty_cycle) const;
     double timeToFailure(const DataPoint& data, double duty_cycle, double fail=std::numeric_limits<double>::signaling_NaN()) const override;
 };

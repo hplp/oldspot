@@ -19,6 +19,8 @@ class FailureMechanism
     const double beta = 2; // Weibull shape parameter [4]
     std::unordered_map<std::string, double> p; // Device parameters
 
+    std::unordered_map<std::string, double> read_params(const std::string& file);
+
   public:
     // Universal constants
     static constexpr double q = 1.60217662e-19;     // C

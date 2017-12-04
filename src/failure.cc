@@ -25,25 +25,29 @@ FailureMechanism::FailureMechanism(const string& _n, const string& tech_file) : 
          {"tox", 1.8},      // nm
          {"Cox", 1.92e-20}, // F/nm^2
          {"alpha", 1.3}};   // alpha power law [2]
+    unordered_map<string, double> params = read_params(tech_file);
+    p.insert(params.begin(), params.end());
+}
 
-    if (!tech_file.empty())
+unordered_map<string, double> FailureMechanism::read_params(const string& file)
+{
+    unordered_map<string, double> params;
+    fstream f(file);
+    if (f)
     {
-        fstream file(tech_file);
-        if (file)
+        string line;
+        while (getline(f, line))
         {
-            string line;
-            while (getline(file, line))
-            {
-                vector<string> tokens = split(line, '\t');
-                if (tokens.size() != 2)
-                    cerr << "warning: " << tech_file << ": " << line << ": unable to parse line" << endl;
-                else
-                    p[tokens[0]] = stod(tokens[1]);
-            }
+            vector<string> tokens = split(line, '\t');
+            if (tokens.size() != 2)
+                cerr << "warning: " << file << ": " << line << ": unable to parse line" << endl;
+            else
+                params[tokens[0]] = stod(tokens[1]);
         }
-        else
-            cerr << "warning: " << tech_file << ": technology constants file not found" << endl;
     }
+    else
+        cerr << "warning: " << file << ": file not found" << endl;
+    return params;
 }
 
 NBTI::NBTI(const string& tech_file) : FailureMechanism("NBTI", tech_file)

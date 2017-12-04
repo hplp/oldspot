@@ -4,6 +4,7 @@
 #include <limits>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "reliability.hh"
@@ -16,6 +17,7 @@ class FailureMechanism
 {
   protected:
     const double beta = 2; // Weibull shape parameter [4]
+    std::unordered_map<std::string, double> p; // Device parameters
 
   public:
     // Universal constants
@@ -23,19 +25,12 @@ class FailureMechanism
     static constexpr double k_B = 8.6173303e-5;     // eV/K
     static constexpr double eV_J = 6.242e18;        // eV -> J
     static constexpr double nm2_cm2 = 1e14;         // nm^2 -> cm^2
-    // Device parameters
-    static constexpr double L = 65;                 // nm
-    static constexpr double Vt0 = 0.5;            // V
-    static constexpr double Vt0_n = 0.5;          // V
-    static constexpr double tox = 1.8;              // nm
-    static constexpr double Cox = 1.92e-20;         // F/nm^2
-    static constexpr double alpha = 1.3;            // alpha power law [2]
 
-    const double fail_default = 0.05;   // Relative delay change [5]
+    static constexpr double fail_default = 0.05;   // Relative delay change [5]
 
     const std::string name;
 
-    FailureMechanism(const std::string& _n) : name(_n) {}
+    FailureMechanism(const std::string& _n);
     virtual double timeToFailure(const DataPoint& data, double duty_cycle, double fail=std::numeric_limits<double>::signaling_NaN()) const = 0;
     virtual WeibullDistribution distribution(const std::vector<MTTFSegment>& mttfs) const
     {
@@ -130,10 +125,6 @@ namespace std
 
 /*
  * [1] PTM
- * 
- * [2] K. Joshi, S. Mukhopadhyay, N. Goel, and S. Mahapatra, “A consistent
- *     physical framework for N and P BTI in HKMG MOSFETs,” in Reliability
- *     Physics Symposium (IRPS), 2012 IEEE International, 2012, p. 5A.3.1-5A.3.10.
  * 
  * [3]
  * 

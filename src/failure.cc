@@ -15,10 +15,20 @@ namespace oldspot
 
 using namespace std;
 
+FailureMechanism::FailureMechanism(const string& _n) : name(_n)
+{
+    p = {{"L", 65},         // nm
+         {"Vt0_p", 0.5},    // PMOS threshold voltage, V
+         {"Vt0_n", 0.5},    // NMOS threshold voltage, V
+         {"tox", 1.8},      // nm
+         {"Cox", 1.92e-20}, // F/nm^2
+         {"alpha", 1.3}};   // alpha power law [2]
+}
+
 double NBTI::degradation(double t, double vdd, double dVth, double temperature, double duty_cycle) const
 {
     duty_cycle = pow(duty_cycle/(1 + sqrt((1 - duty_cycle)/2)), 1.0/6.0);
-    double V = vdd - Vt0 - dVth;
+    double V = vdd - p.at("Vt0_p") - dVth;
     if (V < 0)
     {
         cerr << "warning: subthreshold VDD " << vdd << " not supported" << endl;
@@ -40,7 +50,7 @@ double NBTI::timeToFailure(const DataPoint& data, double duty_cycle, double fail
         return numeric_limits<double>::infinity();
 
     // Create a linear approximation of dVth(t)
-    double dVth_fail = (data.data.at("vdd") - Vt0) - (data.data.at("vdd") - Vt0)/pow(1 + fail, 1/alpha); // [ExtraTime]
+    double dVth_fail = (data.data.at("vdd") - p.at("Vt0_p")) - (data.data.at("vdd") - p.at("Vt0_p"))/pow(1 + fail, 1/p.at("alpha")); // [ExtraTime]
     double dVth = 0, dVth_prev = 0;
     double t = 0;
     for (; dVth < dVth_fail; t += dt)
@@ -66,13 +76,13 @@ double HCI::timeToFailure(const DataPoint& data, double duty_cycle, double fail)
     if (isnan(fail))
         fail = fail_default;
     double vdd = data.data.at("vdd");
-    double dVth_fail = (vdd - Vt0_n) - (vdd - Vt0_n)/pow(1 + fail, 1/alpha); // [ExtraTime]
+    double dVth_fail = (vdd - p.at("Vt0_n")) - (vdd - p.at("Vt0_n"))/pow(1 + fail, 1/p.at("alpha")); // [ExtraTime]
 
     double Vt = k_B/eV_J*data.data.at("temperature")/q;
-    double vdsat = ((vdd - Vt0_n + 2*Vt)*L*Esat)/(vdd - Vt0_n + 2*Vt + A_bulk*L*Esat);
+    double vdsat = ((vdd - p.at("Vt0_n") + 2*Vt)*p.at("L")*Esat)/(vdd - p.at("Vt0_n") + 2*Vt + A_bulk*p.at("L")*Esat);
     double Em = (vdd - vdsat)/l;
-    double Eox = (vdd - Vt0_n)/tox;
-    double A_HCI = q/Cox*K*sqrt(Cox*(vdd - Vt0_n));
+    double Eox = (vdd - p.at("Vt0_n"))/p.at("tox");
+    double A_HCI = q/p.at("Cox")*K*sqrt(p.at("Cox")*(vdd - p.at("Vt0_n")));
     double t = pow(dVth_fail/(A_HCI*exp(Eox/E0)*exp(-phi_it/eV_J/(q*lambda*Em))), 1/n)/(duty_cycle*data.data.at("frequency"));
 
     return t;
@@ -85,3 +95,9 @@ double TDDB::timeToFailure(const DataPoint& data, double, double) const
 }
 
 } // namespace oldspot
+
+/*
+ * [2] K. Joshi, S. Mukhopadhyay, N. Goel, and S. Mahapatra, “A consistent
+ *     physical framework for N and P BTI in HKMG MOSFETs,” in Reliability
+ *     Physics Symposium (IRPS), 2012 IEEE International, 2012, p. 5A.3.1-5A.3.10.
+ */

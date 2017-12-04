@@ -113,7 +113,7 @@ double HCI::timeToFailure(const DataPoint& data, double duty_cycle, double fail)
 
     double Vt = k_B/eV_J*data.data.at("temperature")/q;
     double vdsat = ((vdd - p.at("Vt0_n") + 2*Vt)*p.at("L")*p.at("Esat"))/(vdd - p.at("Vt0_n") + 2*Vt + p.at("A_bulk")*p.at("L")*p.at("Esat"));
-    double Em = (vdd - vdsat)/l;
+    double Em = (vdd - vdsat)/p.at("l");
     double Eox = (vdd - p.at("Vt0_n"))/p.at("tox");
     double A_HCI = q/p.at("Cox")*p.at("K")*sqrt(p.at("Cox")*(vdd - p.at("Vt0_n")));
     double t = pow(dVth_fail/(A_HCI*exp(Eox/p.at("E0"))*exp(-p.at("phi_it")/eV_J/(q*p.at("lambda")*Em))), 1/p.at("n"))/(duty_cycle*data.data.at("frequency"));
@@ -121,10 +121,19 @@ double HCI::timeToFailure(const DataPoint& data, double duty_cycle, double fail)
     return t;
 }
 
+TDDB::TDDB() : FailureMechanism("TDDB")
+{
+    p["a"] = 78;
+    p["b"] = -0.081;    // 1/K
+    p["X"] = 0.759;     // eV
+    p["Y"] = -66.8;     // eV*K
+    p["Z"] = -8.37e-4;  // eV/K
+}
+
 double TDDB::timeToFailure(const DataPoint& data, double, double) const
 {
     double T = data.data.at("temperature");
-    return pow(data.data.at("vdd"), a - b*T)*exp((X + Y/T + Z*T)/(k_B*T));
+    return pow(data.data.at("vdd"), p.at("a") - p.at("b")*T)*exp((p.at("X") + p.at("Y")/T + p.at("Z")*T)/(k_B*T));
 }
 
 } // namespace oldspot

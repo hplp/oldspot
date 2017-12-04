@@ -58,17 +58,6 @@ class EM : public FailureMechanism
 
 class HCI : public FailureMechanism
 {
-  private:
-    // Low-level parameters (chosen from [8])
-    const double E0 = 0.8;              // V/nm
-    const double K = 1.7e8;             // nm/C^0.5
-    const double A_bulk = 0.005;
-    const double phi_it = 3.7;          // eV
-    const double lambda = 7.8;          // nm
-    const double l = 17;                // nm
-    const double Esat = 0.011;          // V/nm
-    const double n = 0.45;
-
   public:
     HCI();
     double degradation(double t, double vdd, double temperature, double frequency, double duty_cycle) const;
@@ -77,16 +66,8 @@ class HCI : public FailureMechanism
 
 class TDDB : public FailureMechanism
 {
-  private:
-    // Low-level parameters (chosen from [9])
-    const double a = 78;
-    const double b = -0.081;    // 1/K
-    const double X = 0.759;     // eV
-    const double Y = -66.8;     // eV*K
-    const double Z = -8.37e-4;  // eV/K
-
   public:
-    TDDB() : FailureMechanism("TDDB") {}
+    TDDB();
     double timeToFailure(const DataPoint& data, double duty_cycle, double fail=std::numeric_limits<double>::signaling_NaN()) const override;
 };
 

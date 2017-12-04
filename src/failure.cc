@@ -25,8 +25,11 @@ FailureMechanism::FailureMechanism(const string& _n, const string& tech_file) : 
          {"tox", 1.8},      // nm
          {"Cox", 1.92e-20}, // F/nm^2
          {"alpha", 1.3}};   // alpha power law [2]
-    unordered_map<string, double> params = read_params(tech_file);
-    p.insert(params.begin(), params.end());
+    if (!tech_file.empty())
+    {
+        unordered_map<string, double> params = read_params(tech_file);
+        p.insert(params.begin(), params.end());
+    }
 }
 
 unordered_map<string, double> FailureMechanism::read_params(const string& file)

@@ -46,7 +46,7 @@ class NBTI : public FailureMechanism
     static constexpr double dt = 3600*24;          // days
 
   public:
-    NBTI(const std::string& tech_file);
+    NBTI(const std::string& tech_file, const std::string& nbti_file);
     double degradation(double t, double vdd, double dVth, double temperature, double duty_cycle) const;
     double timeToFailure(const DataPoint& data, double duty_cycle, double fail=std::numeric_limits<double>::signaling_NaN()) const override;
 };
@@ -54,14 +54,14 @@ class NBTI : public FailureMechanism
 class EM : public FailureMechanism
 {
   public:
-    EM(const std::string& tech_file);
+    EM(const std::string& tech_file, const std::string& em_file);
     double timeToFailure(const DataPoint& data, double duty_cycle, double fail=std::numeric_limits<double>::signaling_NaN()) const override;
 };
 
 class HCI : public FailureMechanism
 {
   public:
-    HCI(const std::string& tech_file);
+    HCI(const std::string& tech_file, const std::string& hci_file);
     double degradation(double t, double vdd, double temperature, double frequency, double duty_cycle) const;
     double timeToFailure(const DataPoint& data, double duty_cycle, double fail=std::numeric_limits<double>::signaling_NaN()) const override;
 };
@@ -69,7 +69,7 @@ class HCI : public FailureMechanism
 class TDDB : public FailureMechanism
 {
   public:
-    TDDB(const std::string& tech_file);
+    TDDB(const std::string& tech_file, const std::string& tddb_file);
     double timeToFailure(const DataPoint& data, double duty_cycle, double fail=std::numeric_limits<double>::signaling_NaN()) const override;
 };
 

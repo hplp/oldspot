@@ -53,7 +53,7 @@ unordered_map<string, double> FailureMechanism::read_params(const string& file)
     return params;
 }
 
-NBTI::NBTI(const string& tech_file) : FailureMechanism("NBTI", tech_file)
+NBTI::NBTI(const string& tech_file, const string& nbti_file) : FailureMechanism("NBTI", tech_file)
 {
     p["A"] = 5.5e12;
     p["B"] = 8e11;
@@ -63,6 +63,11 @@ NBTI::NBTI(const string& tech_file) : FailureMechanism("NBTI", tech_file)
     p["E_Akr"] = 0.2;   // eV
     p["E_ADH2"] = 0.58; // eV
     p["E_AHT"] = 0.03;  // eV
+    if (!nbti_file.empty())
+    {
+        unordered_map<string, double> params = read_params(nbti_file);
+        p.insert(params.begin(), params.end());
+    }
 }
 
 double NBTI::degradation(double t, double vdd, double dVth, double temperature, double duty_cycle) const
@@ -106,13 +111,18 @@ double NBTI::timeToFailure(const DataPoint& data, double duty_cycle, double fail
         return linterp(dVth_fail, {dVth_prev, t - dt}, {dVth, t});
 }
 
-EM::EM(const string& tech_file) : FailureMechanism("EM", tech_file)
+EM::EM(const string& tech_file, const string& em_file) : FailureMechanism("EM", tech_file)
 {
     p["n"] = 2;
     p["Ea"] = 0.8;      // eV
     p["w"] = 4.5e-7;    // m
     p["h"] = 1.2e-6;    // m
     p["A"] = 3.22e21;   // extracted from [?]
+    if (!em_file.empty())
+    {
+        unordered_map<string, double> params = read_params(em_file);
+        p.insert(params.begin(), params.end());
+    }
 }
 
 double EM::timeToFailure(const DataPoint& data, double, double) const
@@ -120,7 +130,7 @@ double EM::timeToFailure(const DataPoint& data, double, double) const
     return p.at("A")*pow(data.data.at("power")/data.data.at("vdd")/(p.at("w")*p.at("h")), -p.at("n"))*exp(p.at("Ea")/(k_B*data.data.at("temperature")));
 }
 
-HCI::HCI(const string& tech_file) : FailureMechanism("HCI", tech_file)
+HCI::HCI(const string& tech_file, const std::string& hci_file) : FailureMechanism("HCI", tech_file)
 {
     p["E0"] = 0.8;      // V/nm
     p["K"] = 1.7e8;     // nm/C^0.5
@@ -130,6 +140,11 @@ HCI::HCI(const string& tech_file) : FailureMechanism("HCI", tech_file)
     p["l"] = 17;        // nm
     p["Esat"] = 0.011;  // V/nm
     p["n"] = 0.45;
+    if (!hci_file.empty())
+    {
+        unordered_map<string, double> params = read_params(hci_file);
+        p.insert(params.begin(), params.end());
+    }
 }
 
 double HCI::timeToFailure(const DataPoint& data, double duty_cycle, double fail) const
@@ -149,13 +164,18 @@ double HCI::timeToFailure(const DataPoint& data, double duty_cycle, double fail)
     return t;
 }
 
-TDDB::TDDB(const string& tech_file) : FailureMechanism("TDDB", tech_file)
+TDDB::TDDB(const string& tech_file, const string& tddb_file) : FailureMechanism("TDDB", tech_file)
 {
     p["a"] = 78;
     p["b"] = -0.081;    // 1/K
     p["X"] = 0.759;     // eV
     p["Y"] = -66.8;     // eV*K
     p["Z"] = -8.37e-4;  // eV/K
+    if (!tddb_file.empty())
+    {
+        unordered_map<string, double> params = read_params(tddb_file);
+        p.insert(params.begin(), params.end());
+    }
 }
 
 double TDDB::timeToFailure(const DataPoint& data, double, double) const

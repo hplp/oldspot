@@ -89,6 +89,10 @@ int main(int argc, char* argv[])
     SwitchArg verbose("v", "verbose", "Display progress output", cmd);
     SwitchArg separate("", "separate-aging-rates", "Display a second table with aging rates separated by mechanism per unit (only works for fresh configuration)", cmd);
     ValueArg<string> values("", "print-values", "Values to display in output table (default: MTTF,Failures", false, "mttf,failures", "values", cmd);
+    ValueArg<string> tddb("", "tddb-parameters", "File containing model parameters for TDDB", false, "", "filename", cmd);
+    ValueArg<string> hci("", "hci-parameters", "File containing model parameters for HCI", false, "", "filename", cmd);
+    ValueArg<string> em("", "em-parameters", "File containing model parameters for electromigration", false, "", "filename", cmd);
+    ValueArg<string> nbti("", "nbti-parameters", "File containing model parameters for NBTI", false, "", "filename", cmd);
     ValueArg<string> technology("", "technology-file", "File containing technology constants for aging mechanisms", false, "", "filename", cmd);
     ValueArg<string> phenomena("", "aging-mechanisms", "Comma-separated list of aging mechanisms to include or \"all\" for all of them", false, "all", "mechanisms", cmd);
     ValueArg<char> delimiter("", "trace-delimiter", "One-character delimiter for data in input trace files (default: ,)", false, ',', "delim", cmd);
@@ -121,13 +125,13 @@ int main(int argc, char* argv[])
     for (const string& token: split(phenomena.getValue(), ','))
     {
         if (token == "nbti" || token == "all")
-            mechanisms.insert(make_shared<NBTI>(technology.getValue()));
+            mechanisms.insert(make_shared<NBTI>(technology.getValue(), nbti.getValue()));
         if (token == "em" || token == "all")
-            mechanisms.insert(make_shared<EM>(technology.getValue()));
+            mechanisms.insert(make_shared<EM>(technology.getValue(), em.getValue()));
         if (token == "hci" || token == "all")
-            mechanisms.insert(make_shared<HCI>(technology.getValue()));
+            mechanisms.insert(make_shared<HCI>(technology.getValue(), hci.getValue()));
         if (token == "tddb" || token == "all")
-            mechanisms.insert(make_shared<TDDB>(technology.getValue()));
+            mechanisms.insert(make_shared<TDDB>(technology.getValue(), tddb.getValue()));
         if (token != "all" && token != "nbti" && token != "em" && token != "hci" && token != "tddb")
             cerr << "warning: ignoring unknown aging mechanism \"" << token << '"' << endl;
     }

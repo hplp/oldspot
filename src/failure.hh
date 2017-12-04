@@ -60,7 +60,6 @@ class NBTI : public FailureMechanism
 
   public:
     NBTI() : FailureMechanism("NBTI") {}
-    static const std::shared_ptr<FailureMechanism> model();
     double degradation(double t, double vdd, double dVth, double temperature, double duty_cycle) const;
     double timeToFailure(const DataPoint& data, double duty_cycle, double fail=std::numeric_limits<double>::signaling_NaN()) const override;
 };
@@ -77,7 +76,6 @@ class EM : public FailureMechanism
 
   public:
     EM() : FailureMechanism("EM") {}
-    static const std::shared_ptr<FailureMechanism> model();
     double timeToFailure(const DataPoint& data, double duty_cycle, double fail=std::numeric_limits<double>::signaling_NaN()) const override;
 };
 
@@ -96,7 +94,6 @@ class HCI : public FailureMechanism
 
   public:
     HCI() : FailureMechanism("HCI") {}
-    static const std::shared_ptr<FailureMechanism> model();
     double degradation(double t, double vdd, double temperature, double frequency, double duty_cycle) const;
     double timeToFailure(const DataPoint& data, double duty_cycle, double fail=std::numeric_limits<double>::signaling_NaN()) const override;
 };
@@ -113,7 +110,6 @@ class TDDB : public FailureMechanism
 
   public:
     TDDB() : FailureMechanism("TDDB") {}
-    static const std::shared_ptr<FailureMechanism> model();
     double timeToFailure(const DataPoint& data, double duty_cycle, double fail=std::numeric_limits<double>::signaling_NaN()) const override;
 };
 

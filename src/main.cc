@@ -117,19 +117,19 @@ int main(int argc, char* argv[])
 
     transform(phenomena.getValue().begin(), phenomena.getValue().end(), phenomena.getValue().begin(), ::tolower);
     if (phenomena.getValue() == "all")
-        mechanisms = {NBTI::model(), EM::model(), HCI::model(), TDDB::model()};
+        mechanisms = {make_shared<NBTI>(), make_shared<EM>(), make_shared<HCI>(), make_shared<TDDB>()};
     else
     {
         for (const string& token: split(phenomena.getValue(), ','))
         {
             if (token == "nbti")
-                mechanisms.push_back(NBTI::model());
+                mechanisms.push_back(make_shared<NBTI>());
             else if (token == "em")
-                mechanisms.push_back(EM::model());
+                mechanisms.push_back(make_shared<EM>());
             else if (token == "hci")
-                mechanisms.push_back(HCI::model());
+                mechanisms.push_back(make_shared<HCI>());
             else if (token == "tddb")
-                mechanisms.push_back(TDDB::model());
+                mechanisms.push_back(make_shared<TDDB>());
             else
                 cerr << "warning: ignoring unknown aging mechanism \"" << token << '"' << endl;
         }

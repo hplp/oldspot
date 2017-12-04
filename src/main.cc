@@ -89,6 +89,7 @@ int main(int argc, char* argv[])
     SwitchArg verbose("v", "verbose", "Display progress output", cmd);
     SwitchArg separate("", "separate-aging-rates", "Display a second table with aging rates separated by mechanism per unit (only works for fresh configuration)", cmd);
     ValueArg<string> values("", "print-values", "Values to display in output table (default: MTTF,Failures", false, "mttf,failures", "values", cmd);
+    ValueArg<string> technology("", "technology-file", "File containing technology constants for aging mechanisms", false, "", "filename", cmd);
     ValueArg<string> phenomena("", "aging-mechanisms", "Comma-separated list of aging mechanisms to include or \"all\" for all of them", false, "all", "mechanisms", cmd);
     ValueArg<char> delimiter("", "trace-delimiter", "One-character delimiter for data in input trace files (default: ,)", false, ',', "delim", cmd);
     ValueArg<string> time("", "time-units", "Units for displaying time to failure (default: hours)", false, "hours", &time_constraint, cmd);
@@ -117,23 +118,18 @@ int main(int argc, char* argv[])
     Unit::delim = delimiter.getValue();
 
     transform(phenomena.getValue().begin(), phenomena.getValue().end(), phenomena.getValue().begin(), ::tolower);
-    if (phenomena.getValue() == "all")
-        mechanisms = {make_shared<NBTI>(), make_shared<EM>(), make_shared<HCI>(), make_shared<TDDB>()};
-    else
+    for (const string& token: split(phenomena.getValue(), ','))
     {
-        for (const string& token: split(phenomena.getValue(), ','))
-        {
-            if (token == "nbti")
-                mechanisms.insert(make_shared<NBTI>());
-            else if (token == "em")
-                mechanisms.insert(make_shared<EM>());
-            else if (token == "hci")
-                mechanisms.insert(make_shared<HCI>());
-            else if (token == "tddb")
-                mechanisms.insert(make_shared<TDDB>());
-            else
-                cerr << "warning: ignoring unknown aging mechanism \"" << token << '"' << endl;
-        }
+        if (token == "nbti" || token == "all")
+            mechanisms.insert(make_shared<NBTI>(technology.getValue()));
+        if (token == "em" || token == "all")
+            mechanisms.insert(make_shared<EM>(technology.getValue()));
+        if (token == "hci" || token == "all")
+            mechanisms.insert(make_shared<HCI>(technology.getValue()));
+        if (token == "tddb" || token == "all")
+            mechanisms.insert(make_shared<TDDB>(technology.getValue()));
+        if (token != "all" && token != "nbti" && token != "em" && token != "hci" && token != "tddb")
+            cerr << "warning: ignoring unknown aging mechanism \"" << token << '"' << endl;
     }
     if (mechanisms.empty())
     {

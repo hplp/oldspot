@@ -1,6 +1,7 @@
 #include "failure.hh"
 
 #include <cmath>
+#include <fstream>
 #include <iostream>
 #include <limits>
 #include <memory>
@@ -15,17 +16,37 @@ namespace oldspot
 
 using namespace std;
 
-FailureMechanism::FailureMechanism(const string& _n) : name(_n)
+FailureMechanism::FailureMechanism(const string& _n, const string& tech_file) : name(_n)
 {
+    // Default values
     p = {{"L", 65},         // nm
          {"Vt0_p", 0.5},    // PMOS threshold voltage, V
          {"Vt0_n", 0.5},    // NMOS threshold voltage, V
          {"tox", 1.8},      // nm
          {"Cox", 1.92e-20}, // F/nm^2
          {"alpha", 1.3}};   // alpha power law [2]
+
+    if (!tech_file.empty())
+    {
+        fstream file(tech_file);
+        if (file)
+        {
+            string line;
+            while (getline(file, line))
+            {
+                vector<string> tokens = split(line, '\t');
+                if (tokens.size() != 2)
+                    cerr << "warning: " << tech_file << ": " << line << ": unable to parse line" << endl;
+                else
+                    p[tokens[0]] = stod(tokens[1]);
+            }
+        }
+        else
+            cerr << "warning: " << tech_file << ": technology constants file not found" << endl;
+    }
 }
 
-NBTI::NBTI() : FailureMechanism("NBTI")
+NBTI::NBTI(const string& tech_file) : FailureMechanism("NBTI", tech_file)
 {
     p["A"] = 5.5e12;
     p["B"] = 8e11;
@@ -78,7 +99,7 @@ double NBTI::timeToFailure(const DataPoint& data, double duty_cycle, double fail
         return linterp(dVth_fail, {dVth_prev, t - dt}, {dVth, t});
 }
 
-EM::EM() : FailureMechanism("EM")
+EM::EM(const string& tech_file) : FailureMechanism("EM", tech_file)
 {
     p["n"] = 2;
     p["Ea"] = 0.8;      // eV
@@ -92,7 +113,7 @@ double EM::timeToFailure(const DataPoint& data, double, double) const
     return p.at("A")*pow(data.data.at("power")/data.data.at("vdd")/(p.at("w")*p.at("h")), -p.at("n"))*exp(p.at("Ea")/(k_B*data.data.at("temperature")));
 }
 
-HCI::HCI() : FailureMechanism("HCI")
+HCI::HCI(const string& tech_file) : FailureMechanism("HCI", tech_file)
 {
     p["E0"] = 0.8;      // V/nm
     p["K"] = 1.7e8;     // nm/C^0.5
@@ -121,7 +142,7 @@ double HCI::timeToFailure(const DataPoint& data, double duty_cycle, double fail)
     return t;
 }
 
-TDDB::TDDB() : FailureMechanism("TDDB")
+TDDB::TDDB(const string& tech_file) : FailureMechanism("TDDB", tech_file)
 {
     p["a"] = 78;
     p["b"] = -0.081;    // 1/K

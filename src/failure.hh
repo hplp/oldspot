@@ -30,7 +30,7 @@ class FailureMechanism
 
     const std::string name;
 
-    FailureMechanism(const std::string& _n);
+    FailureMechanism(const std::string& _n, const std::string& tech_file);
     virtual double timeToFailure(const DataPoint& data, double duty_cycle, double fail=std::numeric_limits<double>::signaling_NaN()) const = 0;
     virtual WeibullDistribution distribution(const std::vector<MTTFSegment>& mttfs) const
     {
@@ -44,7 +44,7 @@ class NBTI : public FailureMechanism
     static constexpr double dt = 3600*24;          // days
 
   public:
-    NBTI();
+    NBTI(const std::string& tech_file);
     double degradation(double t, double vdd, double dVth, double temperature, double duty_cycle) const;
     double timeToFailure(const DataPoint& data, double duty_cycle, double fail=std::numeric_limits<double>::signaling_NaN()) const override;
 };
@@ -52,14 +52,14 @@ class NBTI : public FailureMechanism
 class EM : public FailureMechanism
 {
   public:
-    EM();
+    EM(const std::string& tech_file);
     double timeToFailure(const DataPoint& data, double duty_cycle, double fail=std::numeric_limits<double>::signaling_NaN()) const override;
 };
 
 class HCI : public FailureMechanism
 {
   public:
-    HCI();
+    HCI(const std::string& tech_file);
     double degradation(double t, double vdd, double temperature, double frequency, double duty_cycle) const;
     double timeToFailure(const DataPoint& data, double duty_cycle, double fail=std::numeric_limits<double>::signaling_NaN()) const override;
 };
@@ -67,7 +67,7 @@ class HCI : public FailureMechanism
 class TDDB : public FailureMechanism
 {
   public:
-    TDDB();
+    TDDB(const std::string& tech_file);
     double timeToFailure(const DataPoint& data, double duty_cycle, double fail=std::numeric_limits<double>::signaling_NaN()) const override;
 };
 

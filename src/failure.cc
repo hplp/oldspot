@@ -41,11 +41,14 @@ unordered_map<string, double> FailureMechanism::read_params(const string& file)
         string line;
         while (getline(f, line))
         {
-            vector<string> tokens = split(line, '\t');
-            if (tokens.size() != 2)
-                cerr << "warning: " << file << ": " << line << ": unable to parse line" << endl;
-            else
-                params[tokens[0]] = stod(tokens[1]);
+            if (line[0] != '#')
+            {
+                vector<string> tokens = split(line, '\t');
+                if (tokens.size() != 2)
+                    cerr << "warning: " << file << ": " << line << ": unable to parse line" << endl;
+                else
+                    params[tokens[0]] = stod(tokens[1]);
+            }
         }
     }
     else

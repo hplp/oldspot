@@ -201,7 +201,7 @@ void Unit::compute_reliability(const vector<shared_ptr<FailureMechanism>>& mecha
 {
     for (const auto& trace: traces)
     {
-        for (const shared_ptr<FailureMechanism> mechanism: mechanisms)
+        for (const shared_ptr<FailureMechanism>& mechanism: mechanisms)
         {
             vector<MTTFSegment> mttfs(trace.second.size());
             for (size_t j = 0; j < trace.second.size(); j++)

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <limits>
 #include <memory>
 #include <string>
@@ -114,6 +115,18 @@ class TDDB : public FailureMechanism
 };
 
 } // namespace oldspot
+
+namespace std
+{
+    template<>
+    struct less<shared_ptr<oldspot::FailureMechanism>>
+    {
+        bool operator()(const shared_ptr<oldspot::FailureMechanism>& lhs, const shared_ptr<oldspot::FailureMechanism>& rhs) const
+        {
+            return lhs->name < rhs->name;
+        }
+    };
+}
 
 /*
  * [1] PTM

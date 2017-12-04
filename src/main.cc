@@ -13,6 +13,7 @@
 #include <numeric>
 #include <pugixml.hpp>
 #include <random>
+#include <set>
 #include <string>
 #include <tclap/CmdLine.h>
 #include <unordered_map>
@@ -81,7 +82,7 @@ int main(int argc, char* argv[])
     vector<string> time_units{"seconds", "minutes", "hours", "days", "weeks", "months", "years"};
     ValuesConstraint<string> time_constraint(time_units);
 
-    vector<shared_ptr<FailureMechanism>> mechanisms;
+    set<shared_ptr<FailureMechanism>> mechanisms;
     xml_document doc;
 
     CmdLine cmd("Compute the reliability distribution of a chip", ' ', "0.1");
@@ -123,13 +124,13 @@ int main(int argc, char* argv[])
         for (const string& token: split(phenomena.getValue(), ','))
         {
             if (token == "nbti")
-                mechanisms.push_back(make_shared<NBTI>());
+                mechanisms.insert(make_shared<NBTI>());
             else if (token == "em")
-                mechanisms.push_back(make_shared<EM>());
+                mechanisms.insert(make_shared<EM>());
             else if (token == "hci")
-                mechanisms.push_back(make_shared<HCI>());
+                mechanisms.insert(make_shared<HCI>());
             else if (token == "tddb")
-                mechanisms.push_back(make_shared<TDDB>());
+                mechanisms.insert(make_shared<TDDB>());
             else
                 cerr << "warning: ignoring unknown aging mechanism \"" << token << '"' << endl;
         }

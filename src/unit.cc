@@ -13,6 +13,7 @@
 #include <numeric>
 #include <pugixml.hpp>
 #include <random>
+#include <set>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -197,7 +198,7 @@ double Unit::activity(const DataPoint& data, const shared_ptr<FailureMechanism>&
     return data.data.at("activity");
 }
 
-void Unit::compute_reliability(const vector<shared_ptr<FailureMechanism>>& mechanisms)
+void Unit::compute_reliability(const set<shared_ptr<FailureMechanism>>& mechanisms)
 {
     for (const auto& trace: traces)
     {

@@ -41,21 +41,10 @@ class FailureMechanism
 class NBTI : public FailureMechanism
 {
   private:
-    // Low-level parameters (chosen from [3])
-    const double A = 5.5e12;
-    const double B = 8e11;
-    const double Gamma_IT = 4.5;
-    const double Gamma_HT = 4.5;
-    const double E_Akf = 0.175;         // eV
-    const double E_Akr = 0.2;           // eV
-    const double E_ADH2 = 0.58;         // eV
-    const double E_AHT = 0.03;          // eV
-
-    // High-level parameters 
-    const double dt = 3600*24;          // days
+    static constexpr double dt = 3600*24;          // days
 
   public:
-    NBTI() : FailureMechanism("NBTI") {}
+    NBTI();
     double degradation(double t, double vdd, double dVth, double temperature, double duty_cycle) const;
     double timeToFailure(const DataPoint& data, double duty_cycle, double fail=std::numeric_limits<double>::signaling_NaN()) const override;
 };

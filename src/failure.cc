@@ -25,6 +25,18 @@ FailureMechanism::FailureMechanism(const string& _n) : name(_n)
          {"alpha", 1.3}};   // alpha power law [2]
 }
 
+NBTI::NBTI() : FailureMechanism("NBTI")
+{
+    p["A"] = 5.5e12;
+    p["B"] = 8e11;
+    p["Gamma_IT"] = 4.5;
+    p["Gamma_HT"] = 4.5;
+    p["E_Akf"] = 0.175; // eV
+    p["E_Akr"] = 0.2;   // eV
+    p["E_ADH2"] = 0.58; // eV
+    p["E_AHT"] = 0.03;  // eV
+}
+
 double NBTI::degradation(double t, double vdd, double dVth, double temperature, double duty_cycle) const
 {
     duty_cycle = pow(duty_cycle/(1 + sqrt((1 - duty_cycle)/2)), 1.0/6.0);
@@ -35,9 +47,9 @@ double NBTI::degradation(double t, double vdd, double dVth, double temperature, 
         cerr << "         operating at threshold instead" << endl;
         V = 0;
     }
-    double E_AIT = 2.0/3.0*(E_Akf - E_Akr) + E_ADH2/6;
-    double dN_IT = A*pow(V, Gamma_IT)*exp(-E_AIT/(k_B*temperature))*pow(t, 1.0/6.0);
-    double dN_HT = B*pow(V, Gamma_HT)*exp(-E_AHT/(k_B*temperature));
+    double E_AIT = 2.0/3.0*(p.at("E_Akf") - p.at("E_Akr")) + p.at("E_ADH2")/6;
+    double dN_IT = p.at("A")*pow(V, p.at("Gamma_IT"))*exp(-p.at("E_AIT")/(k_B*temperature))*pow(t, 1.0/6.0);
+    double dN_HT = p.at("B")*pow(V, p.at("Gamma_HT"))*exp(-p.at("E_AHT")/(k_B*temperature));
 
     return duty_cycle*0.027e-12*(dN_IT + dN_HT);
 }

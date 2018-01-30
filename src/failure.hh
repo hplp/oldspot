@@ -28,7 +28,7 @@ class FailureMechanism
     static constexpr double eV_J = 6.242e18;        // eV -> J
     static constexpr double nm2_cm2 = 1e14;         // nm^2 -> cm^2
 
-    static constexpr double fail_default = 0.05;   // Relative delay change [5]
+    static constexpr double fail_default = 0.05;    // Relative delay change [5]
 
     const std::string name;
 

@@ -16,6 +16,12 @@ namespace oldspot
 
 using namespace std;
 
+/**
+ * Constructor for all FailureMechanisms.  Initializes process-dependent parameters
+ * that are used across all failure mechanisms.  Default parameter values come from:
+ * [1] R. Vattikonda, W. Wang, Y. Cao, "Modeling and minimization of PMOS NBTI effect
+ *     for robust nanometer design," DAC, pp. 1047-1052, 2006.
+ */
 FailureMechanism::FailureMechanism(const string& _n, const string& tech_file) : name(_n)
 {
     // Default values
@@ -27,14 +33,19 @@ FailureMechanism::FailureMechanism(const string& _n, const string& tech_file) : 
          {"alpha", 1.3}};   // alpha power law [2]
     if (!tech_file.empty())
     {
-        unordered_map<string, double> params = read_params(tech_file);
+        Parameters params = read_params(tech_file);
         p.insert(params.begin(), params.end());
     }
 }
 
-unordered_map<string, double> FailureMechanism::read_params(const string& file)
+/**
+ * Read parameters from a file.  The file should consist of name-value pairs
+ * separated by tabs, with one pair on each line.  Lines beginning with '#'
+ * are comments and ignored by the parser.
+ */
+FailureMechanism::Parameters FailureMechanism::read_params(const string& file)
 {
-    unordered_map<string, double> params;
+    Parameters params;
     fstream f(file);
     if (f)
     {
@@ -56,8 +67,17 @@ unordered_map<string, double> FailureMechanism::read_params(const string& file)
     return params;
 }
 
+/**
+ * Constructor for the NBTI aging mechanism.  Adds parameters to the parameter list
+ * that are specific to NBTI, which are read from a parameter file (see read_params).
+ * Default parameters come from:
+ * [2] Joshi, K., Mukhopadhyay, S., Goel, N., and Mahapatra, S. "A consistent physical
+ *     framework for N and P BTI in HKMG MOSFETs." In Reliability Physics Symposium (IRPS),
+ *     2012 IEEE International, pages 5A{3. IEEE, 2012.
+ */
 NBTI::NBTI(const string& tech_file, const string& nbti_file) : FailureMechanism("NBTI", tech_file)
 {
+    // Default values
     p["A"] = 5.5e12;
     p["B"] = 8e11;
     p["Gamma_IT"] = 4.5;
@@ -68,11 +88,16 @@ NBTI::NBTI(const string& tech_file, const string& nbti_file) : FailureMechanism(
     p["E_AHT"] = 0.03;  // eV
     if (!nbti_file.empty())
     {
-        unordered_map<string, double> params = read_params(nbti_file);
+        Parameters params = read_params(nbti_file);
         p.insert(params.begin(), params.end());
     }
 }
 
+/**
+ * Compute the degradation in threshold voltage due to NBTI over a given period
+ * of time at the given temperature and duty cycle.  The model for this degradation
+ * comes from [2] (see NBTI::NBTI()).
+ */
 double NBTI::degradation(double t, double vdd, double dVth, double temperature, double duty_cycle) const
 {
     duty_cycle = pow(duty_cycle/(1 + sqrt((1 - duty_cycle)/2)), 1.0/6.0);
@@ -90,6 +115,16 @@ double NBTI::degradation(double t, double vdd, double dVth, double temperature, 
     return duty_cycle*0.027e-12*(dN_IT + dN_HT);
 }
 
+/**
+ * Estimate the time to failure for NBTI.  Since the model from [2] is not invertible,
+ * this is done by finding a start and end time that contains the point of failure and
+ * then linearly interpolating between them.  The amount of time each segment takes is
+ * defined by NBTI::dt.  The effective duty cycle for NBTI is computed from:
+ * [3] F. Oboril and M. B. Tahoori, "ExtraTime: Modeling and analysis of
+ *     wearout due to transistor aging at microarchitecture-level," in
+ *     IEEE/IFIP International Conference on Dependable Systems and Networks
+ *     (DSN 2012), 2012, pp. 1–12.
+ */
 double NBTI::timeToFailure(const DataPoint& data, double duty_cycle, double fail) const
 {
     if (isnan(fail))
@@ -98,7 +133,8 @@ double NBTI::timeToFailure(const DataPoint& data, double duty_cycle, double fail
         return numeric_limits<double>::infinity();
 
     // Create a linear approximation of dVth(t)
-    double dVth_fail = (data.data.at("vdd") - p.at("Vt0_p")) - (data.data.at("vdd") - p.at("Vt0_p"))/pow(1 + fail, 1/p.at("alpha")); // [ExtraTime]
+    double dVth_fail = (data.data.at("vdd") - p.at("Vt0_p"))
+                       - (data.data.at("vdd") - p.at("Vt0_p"))/pow(1 + fail, 1/p.at("alpha")); // [3]
     double dVth = 0, dVth_prev = 0;
     double t = 0;
     for (; dVth < dVth_fail; t += dt)
@@ -114,6 +150,12 @@ double NBTI::timeToFailure(const DataPoint& data, double duty_cycle, double fail
         return linterp(dVth_fail, {dVth_prev, t - dt}, {dVth, t});
 }
 
+/**
+ * Constructor for the EM aging mechanism.  Adds parameters to the parameter list
+ * that are specific to EM, which are read from a parameter file (see read_params).
+ * Default parameters come from:
+ * [4] 
+ */
 EM::EM(const string& tech_file, const string& em_file) : FailureMechanism("EM", tech_file)
 {
     p["n"] = 2;
@@ -123,16 +165,27 @@ EM::EM(const string& tech_file, const string& em_file) : FailureMechanism("EM", 
     p["A"] = 3.22e21;   // extracted from [?]
     if (!em_file.empty())
     {
-        unordered_map<string, double> params = read_params(em_file);
+        Parameters params = read_params(em_file);
         p.insert(params.begin(), params.end());
     }
 }
 
+/**
+ * Compute mean-time-to-failure of EM using Black's Equation:
+ * [5] Black, J. R.  Electromigration--a brief survey and some recent results.
+ *     IEEE Transactions onElectron Devices, 16(4):338–347, 1969.
+ */
 double EM::timeToFailure(const DataPoint& data, double, double) const
 {
-    return p.at("A")*pow(data.data.at("power")/data.data.at("vdd")/(p.at("w")*p.at("h")), -p.at("n"))*exp(p.at("Ea")/(k_B*data.data.at("temperature")));
+    return p.at("A")*pow(data.data.at("power")/data.data.at("vdd")/(p.at("w")*p.at("h")), -p.at("n"))
+                    *exp(p.at("Ea")/(k_B*data.data.at("temperature")));
 }
 
+/**
+ * Constructor for the HCI aging mechanism.  Adds parameters to the parameter list
+ * that are specific to HCI, which are read from a parameter file (see read_params).
+ * Default parameters come from [1].
+ */
 HCI::HCI(const string& tech_file, const std::string& hci_file) : FailureMechanism("HCI", tech_file)
 {
     p["E0"] = 0.8;      // V/nm
@@ -145,28 +198,42 @@ HCI::HCI(const string& tech_file, const std::string& hci_file) : FailureMechanis
     p["n"] = 0.45;
     if (!hci_file.empty())
     {
-        unordered_map<string, double> params = read_params(hci_file);
+        Parameters params = read_params(hci_file);
         p.insert(params.begin(), params.end());
     }
 }
 
+/**
+ * Compute the time to failure due to HCI.  The model in [1] is invertible, so
+ * just compute the time it takes to reach a failure state.
+ */
 double HCI::timeToFailure(const DataPoint& data, double duty_cycle, double fail) const
 {
     if (isnan(fail))
         fail = fail_default;
     double vdd = data.data.at("vdd");
-    double dVth_fail = (vdd - p.at("Vt0_n")) - (vdd - p.at("Vt0_n"))/pow(1 + fail, 1/p.at("alpha")); // [ExtraTime]
+    double dVth_fail = (vdd - p.at("Vt0_n")) - (vdd - p.at("Vt0_n"))/pow(1 + fail, 1/p.at("alpha")); // [3]
 
     double Vt = k_B/eV_J*data.data.at("temperature")/q;
-    double vdsat = ((vdd - p.at("Vt0_n") + 2*Vt)*p.at("L")*p.at("Esat"))/(vdd - p.at("Vt0_n") + 2*Vt + p.at("A_bulk")*p.at("L")*p.at("Esat"));
+    double vdsat = ((vdd - p.at("Vt0_n") + 2*Vt)*p.at("L")*p.at("Esat"))
+                   /(vdd - p.at("Vt0_n") + 2*Vt + p.at("A_bulk")*p.at("L")*p.at("Esat"));
     double Em = (vdd - vdsat)/p.at("l");
     double Eox = (vdd - p.at("Vt0_n"))/p.at("tox");
     double A_HCI = q/p.at("Cox")*p.at("K")*sqrt(p.at("Cox")*(vdd - p.at("Vt0_n")));
-    double t = pow(dVth_fail/(A_HCI*exp(Eox/p.at("E0"))*exp(-p.at("phi_it")/eV_J/(q*p.at("lambda")*Em))), 1/p.at("n"))/(duty_cycle*data.data.at("frequency"));
+    double t = pow(dVth_fail/(A_HCI*exp(Eox/p.at("E0"))*exp(-p.at("phi_it")/eV_J/(q*p.at("lambda")*Em))), 1/p.at("n"))
+               /(duty_cycle*data.data.at("frequency"));
 
     return t;
 }
 
+/**
+ * Constructor for the TDDB aging mechanism.  Adds parameters to the parameter list
+ * that are specific to TDDB, which are read from a parameter file (see read_params).
+ * Default parameters come from:
+ * [6] Srinivasan, J., Adve, S. V., Bose, P., and Rivers, J. A. "The case for lifetime
+ *     reliability-aware microprocessors." In ACM SIGARCH Computer Architecture News,
+ *     volume 32, page 276. IEEE Computer Society, 2004.
+ */
 TDDB::TDDB(const string& tech_file, const string& tddb_file) : FailureMechanism("TDDB", tech_file)
 {
     p["a"] = 78;
@@ -176,11 +243,14 @@ TDDB::TDDB(const string& tech_file, const string& tddb_file) : FailureMechanism(
     p["Z"] = -8.37e-4;  // eV/K
     if (!tddb_file.empty())
     {
-        unordered_map<string, double> params = read_params(tddb_file);
+        Parameters params = read_params(tddb_file);
         p.insert(params.begin(), params.end());
     }
 }
 
+/**
+ * Compute mean time to failure for TDDB using the equation from [6].
+ */
 double TDDB::timeToFailure(const DataPoint& data, double, double) const
 {
     double T = data.data.at("temperature");
@@ -188,9 +258,3 @@ double TDDB::timeToFailure(const DataPoint& data, double, double) const
 }
 
 } // namespace oldspot
-
-/*
- * [2] K. Joshi, S. Mukhopadhyay, N. Goel, and S. Mahapatra, “A consistent
- *     physical framework for N and P BTI in HKMG MOSFETs,” in Reliability
- *     Physics Symposium (IRPS), 2012 IEEE International, 2012, p. 5A.3.1-5A.3.10.
- */

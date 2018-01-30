@@ -16,6 +16,10 @@ namespace oldspot
 
 using namespace std;
 
+/**
+ * Estimate the rate parameter of the Weibull-distributed times-to-failure with
+ * the given shape parameter.
+ */
 WeibullDistribution WeibullDistribution::estimate(const std::vector<double>& ttfs, double beta)
 {
     WeibullDistribution dist;
@@ -26,6 +30,14 @@ WeibullDistribution WeibullDistribution::estimate(const std::vector<double>& ttf
     return dist;
 }
 
+/**
+ * Create a Weibull distribution using the given set of time-varying mean-times-to-failure,
+ * computed using:
+ * [1] Y. Xiang, T. Chantem, R. P. Dick, X. S. Hu and L. Shang, "System-
+ *     level reliability modeling for MPSoCs," 2010 IEEE/ACM/IFIP International
+ *     Conference on Hardware/Software Codesign and System Synthesis (CODES+ISSS),
+ *     Scottsdale, AZ, 2010, pp. 297-306.
+ */
 WeibullDistribution::WeibullDistribution(double b, const vector<MTTFSegment>& mttfs)
     : WeibullDistribution(1, b)
 {
@@ -49,6 +61,10 @@ WeibullDistribution::WeibullDistribution(double b, const vector<MTTFSegment>& mt
     alpha = 1/alpha;
 }
 
+/**
+ * Compute the time it takes to get to a particular reliabilty value with this
+ * Weibull distribution's parameters.
+ */
 double WeibullDistribution::inverse(double r) const
 {
     if (isinf(alpha))
@@ -56,6 +72,11 @@ double WeibullDistribution::inverse(double r) const
     return alpha*pow(-log(r), 1/beta);
 }
 
+/**
+ * Compute the resulting Weibull distribution when multiplying two Weibull
+ * distributions with the same shape parameter (if they have different shape
+ * parameters, the result doesn't follow the Weibull distribution)
+ */
 WeibullDistribution WeibullDistribution::operator*(const WeibullDistribution& other) const
 {
     if (beta != other.beta)
@@ -64,6 +85,9 @@ WeibullDistribution WeibullDistribution::operator*(const WeibullDistribution& ot
     return WeibullDistribution(a, beta);
 }
 
+/**
+ * Copy the parameters of the given Weibull distribution.
+ */
 WeibullDistribution& WeibullDistribution::operator=(const WeibullDistribution& other)
 {
     alpha = other.alpha;
@@ -72,10 +96,3 @@ WeibullDistribution& WeibullDistribution::operator=(const WeibullDistribution& o
 }
 
 } // namespace oldspot
-
-/*
- * [1] Y. Xiang, T. Chantem, R. P. Dick, X. S. Hu and L. Shang, "System-
- * level reliability modeling for MPSoCs," 2010 IEEE/ACM/IFIP International
- * Conference on Hardware/Software Codesign and System Synthesis (CODES+ISSS),
- * Scottsdale, AZ, 2010, pp. 297-306.
- */

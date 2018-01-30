@@ -1,0 +1,34 @@
+<?xml version="1.0" ?>
+
+<unit name="core0" type="unit">
+    <default vdd="1.1" />
+    <default temperature="350" />
+    <default frequency="1000" />
+    <redundancy type="serial" count="1" />
+    <trace file="example/one.trace" failed="" />
+    <trace file="example/fail.trace" failed="cores" />
+</unit>
+<unit name="core1" type="unit">
+    <default vdd="1.1" />
+    <default temperature="350" />
+    <default frequency="1000" />
+    <redundancy type="serial" count="1" />
+    <trace file="example/one.trace" failed="" />
+    <trace file="example/fail.trace" failed="core0" />
+</unit>
+<unit name="core2" type="unit">
+    <default vdd="1.1" />
+    <default temperature="350" />
+    <default frequency="1000" />
+    <redundancy type="serial" count="1" />
+    <trace file="example/one.trace" failed="" />
+    <trace file="example/fail.trace" failed="core0" />
+</unit>
+
+<group name="system" failures="1">
+    <unit name="core0" />
+    <group name="cores" failures="0">
+        <unit name="core1" />
+        <unit name="core2" />
+    </group>
+</group>

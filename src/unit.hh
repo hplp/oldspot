@@ -20,26 +20,41 @@
 
 namespace std
 {
-    template <>
-    class hash<unordered_set<string>>
+
+/**
+ * Hash functor that allows unordered_set<string> to be used as a map key.
+ */
+template <>
+class hash<unordered_set<string>>
+{
+    public:
+    size_t operator()(const unordered_set<string>& strs) const
     {
-      public:
-        size_t operator()(const unordered_set<string>& strs) const
-        {
-            size_t result = 58271;
-            for (const string& s: strs)
-                result ^= strs.hash_function()(s);
-            return result;
-        }
-    };
+        size_t result = 58271;
+        for (const string& s: strs)
+            result ^= strs.hash_function()(s);
+        return result;
+    }
+};
+
 }
 
 namespace oldspot
 {
 
+/**
+ * Component in the system to be simulated.  This can either be a Group, which
+ * contains other components and has its failure state depend on the failure
+ * states of its children, or a Unit, which has no children and has its failure
+ * state depend on reliability calculation.
+ */
 class Component
 {
   public:
+    /**
+     * Perform a function the given component and each of its children in a
+     * prefix depth-first traversal.
+     */
     template<typename function>
     static void walk(const std::shared_ptr<Component>& root, function&& op)
     {
@@ -57,6 +72,12 @@ class Component
         }
     }
 
+    /**
+     * Perform a function the given component and each of its children in a
+     * prefix depth-first traversal.  A component's children are only traversed
+     * if the function performed on that component returns a value that evaluates
+     * to true.
+     */
     template<typename function>
     static void conditional_walk(const std::shared_ptr<Component>& root, function&& op)
     {
@@ -88,6 +109,13 @@ class Component
     friend std::ostream& operator<<(std::ostream& stream, const Component& c);
 };
 
+/**
+ * A unit in the system, represented as a leaf node in the failure dependency
+ * graph.  Each unit is associated with a trace of power, performance, temperature,
+ * etc. that affects the rate at which its reliability degrades.  Each unit requires
+ * one of these traces for each healthy configuration of the system except for ones
+ * on which the unit has failed.
+ */
 class Unit : public Component
 {
   public:
@@ -147,6 +175,11 @@ class Unit : public Component
 
 std::ostream& operator<<(std::ostream& os, const Unit::config_t& config);
 
+/**
+ * Unit that represents an entire core.  The average activity factor of a core
+ * is estimated as its current power consumption divided by its peak power
+ * consumption, or the maximum amount of power it can draw.
+ */
 class Core : public Unit
 {
   public:
@@ -155,6 +188,9 @@ class Core : public Unit
     double activity(const DataPoint& data, const std::shared_ptr<FailureMechanism>&) const override;
 };
 
+/**
+ * Unit that represents a block consisting primarily of logic gates.
+ */
 class Logic : public Unit
 {
   public:
@@ -162,17 +198,23 @@ class Logic : public Unit
     double activity(const DataPoint& data, const std::shared_ptr<FailureMechanism>&) const override;
 };
 
+/**
+ * Unit that represents a block consisting primarily of memory elements.  Unlike
+ * other types of units, its activity is data-dependent rather than usage-
+ * dependent.
+ */
 class Memory : public Unit
 {
   public:
     Memory(const pugi::xml_node& node, unsigned int i) : Unit(node, i) {}
-    // This is data-dependent rather than usage-dependent, but we assume that
-    // high-order bits tend to be zero, which gives an activity factor of 1
-    // in SRAM (we also assume that the aging of the SRAM dominates that of
-    // the addressing logic)
     double activity(const DataPoint& data, const std::shared_ptr<FailureMechanism>& mechanism) const override;
 };
 
+/**
+ * Group component that has children which are either other groups or Units.
+ * A group has a threshold that defines how many failures in its children it
+ * can tolerate before it itself has failed.
+ */
 class Group : public Component
 {
   private:

@@ -30,6 +30,9 @@ namespace oldspot
 using namespace pugi;
 using namespace std;
 
+/**
+ * Push a list of failed units' names in a configuration onto a stream.
+ */
 ostream& operator<<(ostream& os, const Unit::config_t& config)
 {
     if (config.empty())
@@ -38,6 +41,9 @@ ostream& operator<<(ostream& os, const Unit::config_t& config)
                                    [](const string& a, const string& b){ return a + ',' + b; }) << ']';
 }
 
+/**
+ * Get the mean of the times to failure of this Component.
+ */
 double Component::mttf() const
 {
     if (ttfs.empty())
@@ -46,8 +52,11 @@ double Component::mttf() const
         return accumulate(ttfs.begin(), ttfs.end(), 0.0)/ttfs.size();
 }
 
-// confidence is reserved until a good implementation of Student's t distribution can be found
-// right now, the confidence interval is always 95%
+/**
+ * Get the confidence interval on the MTTF of this Component.  Until a good implementation
+ * of Student's t distribution can be found, the confidence parameter is reserved and
+ * the interval is always a 95% confidence interval.
+ */
 pair<double, double> Component::mttf_interval(double confidence) const
 {
     if (ttfs.size() <= 1)
@@ -61,15 +70,25 @@ pair<double, double> Component::mttf_interval(double confidence) const
     }
 }
 
+/**
+ * Push the string version of this Component onto a stream.
+ */
 ostream& operator<<(ostream& stream, const Component& c)
 {
     return c.dump(stream);
 }
 
+// Default delimiter for parsing trace files
 char Unit::delim = ',';
+// config_t that specifies a "fresh" system (all units healthy)
 const Unit::config_t Unit::fresh = {""};
 
-vector<shared_ptr<Unit>> Unit::parents_failed(const shared_ptr<Component>& root, const vector<shared_ptr<Unit>>& units)
+/**
+ * Check for units whose parent groups have reported failure and then mark them
+ * as having failed.
+ */
+vector<shared_ptr<Unit>> Unit::parents_failed(const shared_ptr<Component>& root,
+                                              const vector<shared_ptr<Unit>>& units)
 {
     vector<shared_ptr<Unit>> failed(units.begin(), units.end());
     Component::conditional_walk(root, [&](const shared_ptr<Component>& c){
@@ -85,6 +104,18 @@ vector<shared_ptr<Unit>> Unit::parents_failed(const shared_ptr<Component>& root,
     return failed;
 }
 
+/**
+ * Constructor for Unit.  The new Unit reads the trace specified in the given
+ * pugixml node using the given set of default values if they are missing.  Each
+ * node should consist of a set of trace files that contains one trace for each
+ * possible configuration in which this Unit is not failed and, optionally,
+ * a redundancy specification that specifies how many redudnant copies of this Unit
+ * there are and whether they are parallel or serial (i.e. if they are shadow copies
+ * or take over when older ones fail).  Configurations are specified as sets of
+ * names of units that have failed.
+ * 
+ * The ID of each unit should be unique.
+ */
 Unit::Unit(const xml_node& node, unsigned int i, unordered_map<string, double> defaults)
     : Component(node.attribute("name").value()),
       age(0), copies(1), _current_reliability(1), _failed(false), remaining(1), serial(true), config({}), prev_config({}), id(i)
@@ -132,12 +163,18 @@ Unit::Unit(const xml_node& node, unsigned int i, unordered_map<string, double> d
             data.data["frequency"] *= 1e6; // Expecting MHz; convert to Hz
 }
 
+/**
+ * Units don't have children, so return an empty vector.
+ */
 vector<shared_ptr<Component>>& Unit::children()
 {
     static vector<shared_ptr<Component>> no_children;
     return no_children;
 }
 
+/**
+ * Reset the unit's reliability and age to being fresh.
+ */
 void Unit::reset()
 {
     age = 0;
@@ -146,6 +183,10 @@ void Unit::reset()
     remaining = copies;
 }
 
+/**
+ * Determine the configuration of failed units and set this Unit's reliability function
+ * based on that.
+ */
 void Unit::set_configuration(const shared_ptr<Component>& root)
 {
     if (_failed)
@@ -174,6 +215,10 @@ void Unit::set_configuration(const shared_ptr<Component>& root)
     }
 }
 
+/**
+ * Determine the next event this Enit experiences relative to the time of the previous
+ * event.  Currently this only means the time at which this Unit will fail.
+ */
 double Unit::get_next_event() const
 {
     static random_device dev;
@@ -185,6 +230,12 @@ double Unit::get_next_event() const
     return next - inverse(_current_reliability);
 }
 
+/**
+ * Update this Unit's reliability for the current simulation time.  This must
+ * be shifted according to:
+ * [1] Bolchini, C., Carminati, M., Gribaudo, M., and Miele, A. A lightweight and
+ *     open-source framework for the lifetime estimation of multicore systems. ICCD 2014.
+ */
 void Unit::update_reliability(double dt)
 {
     age += dt;
@@ -193,11 +244,18 @@ void Unit::update_reliability(double dt)
     _current_reliability = reliability(age);
 }
 
+/**
+ * The activity for an unspecified type of Unit is specified directly by the trace file in an
+ * "activity" column.
+ */
 double Unit::activity(const DataPoint& data, const shared_ptr<FailureMechanism>& mechanism) const
 {
     return data.data.at("activity");
 }
 
+/**
+ * Compute the reliability functions, R(t), for this Unit for all configurations.
+ */
 void Unit::compute_reliability(const set<shared_ptr<FailureMechanism>>& mechanisms)
 {
     for (const auto& trace: traces)
@@ -219,6 +277,10 @@ void Unit::compute_reliability(const set<shared_ptr<FailureMechanism>>& mechanis
     }
 }
 
+/**
+ * Estimate the aging rate of the unit for the given configuration if it has
+ * not failed in that configuration.
+ */
 double Unit::aging_rate(const config_t& c) const
 {
     if (failed_in_trace(c))
@@ -227,26 +289,46 @@ double Unit::aging_rate(const config_t& c) const
         return overall_reliabilities.at(c).rate();
 }
 
+/**
+ * Estimate this Unit's overall aging rate for the given failure mechanism assuming
+ * a fresh system.
+ */
 double Unit::aging_rate(const std::shared_ptr<FailureMechanism>& mechanism) const
 {
     return reliabilities.at(fresh).at(mechanism).rate();
 }
 
+/**
+ * Compute this Unit's reliability at time t for configuration c.
+ */
 double Unit::reliability(const config_t& c, double t) const
 {
     return overall_reliabilities.at(c)(t);
 }
 
+/**
+ * Compute the amount of time it takes for this unit to reach reliability r with
+ * configuration c.
+ */
 double Unit::inverse(const config_t& c, double r) const
 {
     return overall_reliabilities.at(c).inverse(r);
 }
 
+/**
+ * Check if this Unit is failed in the given configuration.
+ */
 bool Unit::failed_in_trace(const config_t& c) const
 {
     return c.count(name) > 0;
 }
 
+/**
+ * Set this Unit as having failed.  If there is redundancy, the amount of available
+ * redudant units is decremented instead, and this Unit only fails if there are none
+ * left.  If the type of redundancy is serial, then this Unit's age and reliability
+ * are reset.
+ */
 void Unit::failure()
 {
     _failed = --remaining == 0;
@@ -258,16 +340,36 @@ void Unit::failure()
     }
 }
 
+/**
+ * When pushed to a stream, push a Unit's name only.
+ */
 ostream& Unit::dump(ostream& stream) const
 {
     return stream << name;
 }
 
+/**
+ * Due to the complexity of a core, the activity of a Core is estimated to be the
+ * fraction it is consuming of the maximum amount of power it can consume, or
+ * power/peak_power.
+ */
 double Core::activity(const DataPoint& data, const shared_ptr<FailureMechanism>&) const
 {
     return data.data.at("power")/data.data.at("peak_power");
 }
 
+/**
+ * Logic activity is taken to be the number of times it is activated in a period of time
+ * divided by the number of cycles that have taken place.
+ * 
+ * Because not all transistors in the unit are necessarily experiencing NBTI at the same
+ * time, the integral of expected activity factors over all of the transistors is used instead.
+ * See:
+ * [2] F. Oboril and M. B. Tahoori, "ExtraTime: Modeling and analysis of
+ *     wearout due to transistor aging at microarchitecture-level," in
+ *     IEEE/IFIP International Conference on Dependable Systems and Networks
+ *     (DSN 2012), 2012, pp. 1–12.
+ */
 double Logic::activity(const DataPoint& data, const shared_ptr<FailureMechanism>& mechanism) const
 {
     double duty_cycle = min(data.data.at("activity")/(data.duration*data.data.at("frequency")), 1.0);
@@ -277,6 +379,11 @@ double Logic::activity(const DataPoint& data, const shared_ptr<FailureMechanism>
         return duty_cycle;
 }
 
+/**
+ * Unlike other types of units, the activity of memory units is data-dependent rather than
+ * usage-dependent.  We assume here that high-order bits tend to be zero, which means their
+ * degradation (particularly for NBTI) will dominate that of lower-order bits.
+ */
 double Memory::activity(const DataPoint& data, const shared_ptr<FailureMechanism>& mechanism) const
 {
     if (mechanism->name == "HCI")
@@ -285,6 +392,10 @@ double Memory::activity(const DataPoint& data, const shared_ptr<FailureMechanism
         return 1;
 }
 
+/**
+ * Constructor for a group of components.  Has a set of children that can either be other Groups
+ * or Units, and is considered to be failed if enough of its children have failed.
+ */
 Group::Group(const xml_node& node, vector<shared_ptr<Unit>>& units)
     : Component(node.attribute("name").value()), failures(node.attribute("failures").as_int())
 {
@@ -308,6 +419,10 @@ Group::Group(const xml_node& node, vector<shared_ptr<Unit>>& units)
     }
 }
 
+/**
+ * A Group has failed if the number of children who have failed has passed the threshold
+ * of tolerable failures.
+ */
 bool Group::failed() const
 {
     unsigned int f = 0;
@@ -317,6 +432,10 @@ bool Group::failed() const
     return false;
 }
 
+/**
+ * Push the string representation of this Group onto a stream, which is its name followed
+ * by a list of its children's names and how many failures it can tolerate.
+ */
 ostream& Group::dump(ostream& stream) const
 {
     return stream << name << '(' << _children.size() << " children,failures=" << failures << ')';

@@ -108,19 +108,21 @@ class TDDB : public FailureMechanism
 
 } // namespace oldspot
 
+namespace std
+{
+
 /**
  * Comparison functor to allow FailureMechanisms to be stored in ordered
  * std::maps and std::sets and be sorted by name.
  */
-namespace std
+template<>
+struct less<shared_ptr<oldspot::FailureMechanism>>
 {
-    template<>
-    struct less<shared_ptr<oldspot::FailureMechanism>>
+    bool operator()(const shared_ptr<oldspot::FailureMechanism>& lhs,
+                    const shared_ptr<oldspot::FailureMechanism>& rhs) const
     {
-        bool operator()(const shared_ptr<oldspot::FailureMechanism>& lhs,
-                        const shared_ptr<oldspot::FailureMechanism>& rhs) const
-        {
-            return lhs->name < rhs->name;
-        }
-    };
+        return lhs->name < rhs->name;
+    }
+};
+
 }

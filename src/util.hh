@@ -12,8 +12,8 @@ namespace oldspot
 /**
  * Linearly interpolate between two points, s (start) and f (end).
  */
-template<typename T>
-inline T linterp(const T& x, const std::pair<T, T>& s, const std::pair<T, T>& f)
+template<typename T> inline T
+linterp(const T& x, const std::pair<T, T>& s, const std::pair<T, T>& f)
 {
     return s.second + (f.second - s.second)*(x - s.first)/(f.first - s.first);
 }
@@ -24,8 +24,8 @@ std::vector<std::string> split(const std::string& str, char delimiter);
  * Print a nicely-formatted table with row and column headers where the data is
  * defined using nested maps organized as {row label: {column label: data}}.
  */
-template<typename T>
-void print_table(const std::vector<std::string>& rows, const std::vector<std::string>& cols,
+template<typename T> void
+print_table(const std::vector<std::string>& rows, const std::vector<std::string>& cols,
                  const std::unordered_map<std::string, std::unordered_map<std::string, T>>& data)
 {
     using namespace std;

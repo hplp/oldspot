@@ -44,13 +44,15 @@ struct OutputData
     double operator()(const shared_ptr<Component>& c) { return funct(c); }
 };
 
-inline bool node_is(const xml_node& node, const string& type)
+inline bool
+node_is(const xml_node& node, const string& type)
 {
     return strcmp(node.attribute("type").value(), type.c_str()) == 0;
 }
 
 // Assumes time is already in seconds
-inline double convert_time(double time, const string& units)
+inline double
+convert_time(double time, const string& units)
 {
     if (units == "seconds")
         return time;
@@ -75,7 +77,8 @@ inline double convert_time(double time, const string& units)
     throw invalid_argument("unknown time unit \"" + units + '"');
 }
 
-int main(int argc, char* argv[])
+int
+main(int argc, char* argv[])
 {
     using namespace TCLAP;
 

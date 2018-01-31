@@ -12,7 +12,8 @@ namespace oldspot
 /**
  * Split a string into tokens with the given single-character delimiter.
  */
-vector<string> split(const string& str, char delimiter)
+vector<string>
+split(const string& str, char delimiter)
 {
     if (str.empty())
         return {""};

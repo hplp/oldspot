@@ -24,7 +24,8 @@ using namespace std;
 /**
  * Push a string representation of a DataPoint onto a stream.
  */
-ostream& operator<<(ostream& stream, const DataPoint& point)
+ostream&
+operator<<(ostream& stream, const DataPoint& point)
 {
     stream << point.time << ":{";
     stream << accumulate(next(point.data.begin()), point.data.end(),
@@ -39,7 +40,8 @@ ostream& operator<<(ostream& stream, const DataPoint& point)
  * the trace and each column is a quantity in the trace, with the first row containing
  * headers.  The first column must be the time at which the data point occurs.
  */
-vector<DataPoint> parseTrace(const string fname, char delimiter)
+vector<DataPoint>
+parseTrace(const string fname, char delimiter)
 {
     ifstream file(fname);
     if (!file)

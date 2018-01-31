@@ -33,7 +33,8 @@ using namespace std;
 /**
  * Push a list of failed units' names in a configuration onto a stream.
  */
-ostream& operator<<(ostream& os, const Unit::config_t& config)
+ostream&
+operator<<(ostream& os, const Unit::config_t& config)
 {
     if (config.empty())
         return os << "[]";
@@ -44,7 +45,8 @@ ostream& operator<<(ostream& os, const Unit::config_t& config)
 /**
  * Get the mean of the times to failure of this Component.
  */
-double Component::mttf() const
+double
+Component::mttf() const
 {
     if (ttfs.empty())
         return numeric_limits<double>::quiet_NaN();
@@ -57,7 +59,8 @@ double Component::mttf() const
  * of Student's t distribution can be found, the confidence parameter is reserved and
  * the interval is always a 95% confidence interval.
  */
-pair<double, double> Component::mttf_interval(double confidence) const
+pair<double, double>
+Component::mttf_interval(double confidence) const
 {
     if (ttfs.size() <= 1)
         return {numeric_limits<double>::quiet_NaN(), numeric_limits<double>::quiet_NaN()};
@@ -73,7 +76,8 @@ pair<double, double> Component::mttf_interval(double confidence) const
 /**
  * Push the string version of this Component onto a stream.
  */
-ostream& operator<<(ostream& stream, const Component& c)
+ostream&
+operator<<(ostream& stream, const Component& c)
 {
     return c.dump(stream);
 }
@@ -87,8 +91,8 @@ const Unit::config_t Unit::fresh = {""};
  * Check for units whose parent groups have reported failure and then mark them
  * as having failed.
  */
-vector<shared_ptr<Unit>> Unit::parents_failed(const shared_ptr<Component>& root,
-                                              const vector<shared_ptr<Unit>>& units)
+vector<shared_ptr<Unit>>
+Unit::parents_failed(const shared_ptr<Component>& root, const vector<shared_ptr<Unit>>& units)
 {
     vector<shared_ptr<Unit>> failed(units.begin(), units.end());
     Component::conditional_walk(root, [&](const shared_ptr<Component>& c){
@@ -166,7 +170,8 @@ Unit::Unit(const xml_node& node, unsigned int i, unordered_map<string, double> d
 /**
  * Units don't have children, so return an empty vector.
  */
-vector<shared_ptr<Component>>& Unit::children()
+vector<shared_ptr<Component>>&
+Unit::children()
 {
     static vector<shared_ptr<Component>> no_children;
     return no_children;
@@ -175,7 +180,8 @@ vector<shared_ptr<Component>>& Unit::children()
 /**
  * Reset the unit's reliability and age to being fresh.
  */
-void Unit::reset()
+void
+Unit::reset()
 {
     age = 0;
     _current_reliability = 1;
@@ -187,7 +193,8 @@ void Unit::reset()
  * Determine the configuration of failed units and set this Unit's reliability function
  * based on that.
  */
-void Unit::set_configuration(const shared_ptr<Component>& root)
+void
+Unit::set_configuration(const shared_ptr<Component>& root)
 {
     if (_failed)
         cerr << "warning: setting configuration for failed unit " << name << endl;
@@ -219,7 +226,8 @@ void Unit::set_configuration(const shared_ptr<Component>& root)
  * Determine the next event this Enit experiences relative to the time of the previous
  * event.  Currently this only means the time at which this Unit will fail.
  */
-double Unit::get_next_event() const
+double
+Unit::get_next_event() const
 {
     static random_device dev;
     static mt19937 gen(dev());
@@ -236,7 +244,8 @@ double Unit::get_next_event() const
  * [1] Bolchini, C., Carminati, M., Gribaudo, M., and Miele, A. A lightweight and
  *     open-source framework for the lifetime estimation of multicore systems. ICCD 2014.
  */
-void Unit::update_reliability(double dt)
+void
+Unit::update_reliability(double dt)
 {
     age += dt;
     if (!prev_config.empty())
@@ -248,7 +257,8 @@ void Unit::update_reliability(double dt)
  * The activity for an unspecified type of Unit is specified directly by the trace file in an
  * "activity" column.
  */
-double Unit::activity(const DataPoint& data, const shared_ptr<FailureMechanism>& mechanism) const
+double
+Unit::activity(const DataPoint& data, const shared_ptr<FailureMechanism>& mechanism) const
 {
     return data.data.at("activity");
 }
@@ -256,7 +266,8 @@ double Unit::activity(const DataPoint& data, const shared_ptr<FailureMechanism>&
 /**
  * Compute the reliability functions, R(t), for this Unit for all configurations.
  */
-void Unit::compute_reliability(const set<shared_ptr<FailureMechanism>>& mechanisms)
+void
+Unit::compute_reliability(const set<shared_ptr<FailureMechanism>>& mechanisms)
 {
     for (const auto& trace: traces)
     {
@@ -281,7 +292,8 @@ void Unit::compute_reliability(const set<shared_ptr<FailureMechanism>>& mechanis
  * Estimate the aging rate of the unit for the given configuration if it has
  * not failed in that configuration.
  */
-double Unit::aging_rate(const config_t& c) const
+double
+Unit::aging_rate(const config_t& c) const
 {
     if (failed_in_trace(c))
         return 0;
@@ -293,7 +305,8 @@ double Unit::aging_rate(const config_t& c) const
  * Estimate this Unit's overall aging rate for the given failure mechanism assuming
  * a fresh system.
  */
-double Unit::aging_rate(const std::shared_ptr<FailureMechanism>& mechanism) const
+double
+Unit::aging_rate(const std::shared_ptr<FailureMechanism>& mechanism) const
 {
     return reliabilities.at(fresh).at(mechanism).rate();
 }
@@ -301,7 +314,8 @@ double Unit::aging_rate(const std::shared_ptr<FailureMechanism>& mechanism) cons
 /**
  * Compute this Unit's reliability at time t for configuration c.
  */
-double Unit::reliability(const config_t& c, double t) const
+double
+Unit::reliability(const config_t& c, double t) const
 {
     return overall_reliabilities.at(c)(t);
 }
@@ -310,7 +324,8 @@ double Unit::reliability(const config_t& c, double t) const
  * Compute the amount of time it takes for this unit to reach reliability r with
  * configuration c.
  */
-double Unit::inverse(const config_t& c, double r) const
+double
+Unit::inverse(const config_t& c, double r) const
 {
     return overall_reliabilities.at(c).inverse(r);
 }
@@ -318,7 +333,8 @@ double Unit::inverse(const config_t& c, double r) const
 /**
  * Check if this Unit is failed in the given configuration.
  */
-bool Unit::failed_in_trace(const config_t& c) const
+bool
+Unit::failed_in_trace(const config_t& c) const
 {
     return c.count(name) > 0;
 }
@@ -329,7 +345,8 @@ bool Unit::failed_in_trace(const config_t& c) const
  * left.  If the type of redundancy is serial, then this Unit's age and reliability
  * are reset.
  */
-void Unit::failure()
+void
+Unit::failure()
 {
     _failed = --remaining == 0;
     if (serial)
@@ -343,7 +360,8 @@ void Unit::failure()
 /**
  * When pushed to a stream, push a Unit's name only.
  */
-ostream& Unit::dump(ostream& stream) const
+ostream&
+Unit::dump(ostream& stream) const
 {
     return stream << name;
 }
@@ -353,7 +371,8 @@ ostream& Unit::dump(ostream& stream) const
  * fraction it is consuming of the maximum amount of power it can consume, or
  * power/peak_power.
  */
-double Core::activity(const DataPoint& data, const shared_ptr<FailureMechanism>&) const
+double
+Core::activity(const DataPoint& data, const shared_ptr<FailureMechanism>&) const
 {
     return data.data.at("power")/data.data.at("peak_power");
 }
@@ -370,7 +389,8 @@ double Core::activity(const DataPoint& data, const shared_ptr<FailureMechanism>&
  *     IEEE/IFIP International Conference on Dependable Systems and Networks
  *     (DSN 2012), 2012, pp. 1–12.
  */
-double Logic::activity(const DataPoint& data, const shared_ptr<FailureMechanism>& mechanism) const
+double
+Logic::activity(const DataPoint& data, const shared_ptr<FailureMechanism>& mechanism) const
 {
     double duty_cycle = min(data.data.at("activity")/(data.duration*data.data.at("frequency")), 1.0);
     if (mechanism->name == "NBTI")
@@ -384,7 +404,8 @@ double Logic::activity(const DataPoint& data, const shared_ptr<FailureMechanism>
  * usage-dependent.  We assume here that high-order bits tend to be zero, which means their
  * degradation (particularly for NBTI) will dominate that of lower-order bits.
  */
-double Memory::activity(const DataPoint& data, const shared_ptr<FailureMechanism>& mechanism) const
+double
+Memory::activity(const DataPoint& data, const shared_ptr<FailureMechanism>& mechanism) const
 {
     if (mechanism->name == "HCI")
         return 0;
@@ -423,7 +444,8 @@ Group::Group(const xml_node& node, vector<shared_ptr<Unit>>& units)
  * A Group has failed if the number of children who have failed has passed the threshold
  * of tolerable failures.
  */
-bool Group::failed() const
+bool
+Group::failed() const
 {
     unsigned int f = 0;
     for (const shared_ptr<Component>& child: _children)
@@ -436,7 +458,8 @@ bool Group::failed() const
  * Push the string representation of this Group onto a stream, which is its name followed
  * by a list of its children's names and how many failures it can tolerate.
  */
-ostream& Group::dump(ostream& stream) const
+ostream&
+Group::dump(ostream& stream) const
 {
     return stream << name << '(' << _children.size() << " children,failures=" << failures << ')';
 }

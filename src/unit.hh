@@ -27,8 +27,9 @@ namespace std
 template <>
 class hash<unordered_set<string>>
 {
-    public:
-    size_t operator()(const unordered_set<string>& strs) const
+  public:
+    size_t
+    operator()(const unordered_set<string>& strs) const
     {
         size_t result = 58271;
         for (const string& s: strs)
@@ -55,8 +56,8 @@ class Component
      * Perform a function the given component and each of its children in a
      * prefix depth-first traversal.
      */
-    template<typename function>
-    static void walk(const std::shared_ptr<Component>& root, function&& op)
+    template<typename function> static void
+    walk(const std::shared_ptr<Component>& root, function&& op)
     {
         using namespace std;
     
@@ -78,8 +79,8 @@ class Component
      * if the function performed on that component returns a value that evaluates
      * to true.
      */
-    template<typename function>
-    static void conditional_walk(const std::shared_ptr<Component>& root, function&& op)
+    template<typename function> static void
+    conditional_walk(const std::shared_ptr<Component>& root, function&& op)
     {
         using namespace std;
     

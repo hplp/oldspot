@@ -43,7 +43,8 @@ FailureMechanism::FailureMechanism(const string& _n, const string& tech_file) : 
  * separated by tabs, with one pair on each line.  Lines beginning with '#'
  * are comments and ignored by the parser.
  */
-FailureMechanism::Parameters FailureMechanism::read_params(const string& file)
+FailureMechanism::Parameters
+FailureMechanism::read_params(const string& file)
 {
     Parameters params;
     fstream f(file);
@@ -98,7 +99,8 @@ NBTI::NBTI(const string& tech_file, const string& nbti_file) : FailureMechanism(
  * of time at the given temperature and duty cycle.  The model for this degradation
  * comes from [2] (see NBTI::NBTI()).
  */
-double NBTI::degradation(double t, double vdd, double dVth, double temperature, double duty_cycle) const
+double
+NBTI::degradation(double t, double vdd, double dVth, double temperature, double duty_cycle) const
 {
     duty_cycle = pow(duty_cycle/(1 + sqrt((1 - duty_cycle)/2)), 1.0/6.0);
     double V = vdd - p.at("Vt0_p") - dVth;
@@ -125,7 +127,8 @@ double NBTI::degradation(double t, double vdd, double dVth, double temperature, 
  *     IEEE/IFIP International Conference on Dependable Systems and Networks
  *     (DSN 2012), 2012, pp. 1–12.
  */
-double NBTI::timeToFailure(const DataPoint& data, double duty_cycle, double fail) const
+double
+NBTI::timeToFailure(const DataPoint& data, double duty_cycle, double fail) const
 {
     if (isnan(fail))
         fail = fail_default;
@@ -175,7 +178,8 @@ EM::EM(const string& tech_file, const string& em_file) : FailureMechanism("EM", 
  * [5] Black, J. R.  Electromigration--a brief survey and some recent results.
  *     IEEE Transactions onElectron Devices, 16(4):338–347, 1969.
  */
-double EM::timeToFailure(const DataPoint& data, double, double) const
+double
+EM::timeToFailure(const DataPoint& data, double, double) const
 {
     return p.at("A")*pow(data.data.at("power")/data.data.at("vdd")/(p.at("w")*p.at("h")), -p.at("n"))
                     *exp(p.at("Ea")/(k_B*data.data.at("temperature")));
@@ -207,7 +211,8 @@ HCI::HCI(const string& tech_file, const std::string& hci_file) : FailureMechanis
  * Compute the time to failure due to HCI.  The model in [1] is invertible, so
  * just compute the time it takes to reach a failure state.
  */
-double HCI::timeToFailure(const DataPoint& data, double duty_cycle, double fail) const
+double
+HCI::timeToFailure(const DataPoint& data, double duty_cycle, double fail) const
 {
     if (isnan(fail))
         fail = fail_default;
@@ -251,7 +256,8 @@ TDDB::TDDB(const string& tech_file, const string& tddb_file) : FailureMechanism(
 /**
  * Compute mean time to failure for TDDB using the equation from [6].
  */
-double TDDB::timeToFailure(const DataPoint& data, double, double) const
+double
+TDDB::timeToFailure(const DataPoint& data, double, double) const
 {
     double T = data.data.at("temperature");
     return pow(data.data.at("vdd"), p.at("a") - p.at("b")*T)*exp((p.at("X") + p.at("Y")/T + p.at("Z")*T)/(k_B*T));

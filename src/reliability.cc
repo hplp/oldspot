@@ -20,7 +20,8 @@ using namespace std;
  * Estimate the rate parameter of the Weibull-distributed times-to-failure with
  * the given shape parameter.
  */
-WeibullDistribution WeibullDistribution::estimate(const std::vector<double>& ttfs, double beta)
+WeibullDistribution
+WeibullDistribution::estimate(const std::vector<double>& ttfs, double beta)
 {
     WeibullDistribution dist;
     dist.beta = beta;
@@ -65,7 +66,8 @@ WeibullDistribution::WeibullDistribution(double b, const vector<MTTFSegment>& mt
  * Compute the time it takes to get to a particular reliabilty value with this
  * Weibull distribution's parameters.
  */
-double WeibullDistribution::inverse(double r) const
+double
+WeibullDistribution::inverse(double r) const
 {
     if (isinf(alpha))
         return numeric_limits<double>::infinity();
@@ -77,7 +79,8 @@ double WeibullDistribution::inverse(double r) const
  * distributions with the same shape parameter (if they have different shape
  * parameters, the result doesn't follow the Weibull distribution)
  */
-WeibullDistribution WeibullDistribution::operator*(const WeibullDistribution& other) const
+WeibullDistribution
+WeibullDistribution::operator*(const WeibullDistribution& other) const
 {
     if (beta != other.beta)
         throw invalid_argument("the product of two Weibull distributions with different shapes does not follow a Weibull distribution");
@@ -88,7 +91,8 @@ WeibullDistribution WeibullDistribution::operator*(const WeibullDistribution& ot
 /**
  * Copy the parameters of the given Weibull distribution.
  */
-WeibullDistribution& WeibullDistribution::operator=(const WeibullDistribution& other)
+WeibullDistribution&
+WeibullDistribution::operator=(const WeibullDistribution& other)
 {
     alpha = other.alpha;
     beta = other.beta;

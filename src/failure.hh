@@ -51,7 +51,9 @@ class FailureMechanism
     FailureMechanism(const std::string& _n, const std::string& tech_file);
     virtual double timeToFailure(const DataPoint& data, double duty_cycle,
                                  double fail=std::numeric_limits<double>::signaling_NaN()) const = 0;
-    virtual WeibullDistribution distribution(const std::vector<MTTFSegment>& mttfs) const
+
+    virtual WeibullDistribution
+    distribution(const std::vector<MTTFSegment>& mttfs) const
     {
         return WeibullDistribution(beta, mttfs);
     }
@@ -118,8 +120,9 @@ namespace std
 template<>
 struct less<shared_ptr<oldspot::FailureMechanism>>
 {
-    bool operator()(const shared_ptr<oldspot::FailureMechanism>& lhs,
-                    const shared_ptr<oldspot::FailureMechanism>& rhs) const
+    bool
+    operator()(const shared_ptr<oldspot::FailureMechanism>& lhs,
+               const shared_ptr<oldspot::FailureMechanism>& rhs) const
     {
         return lhs->name < rhs->name;
     }

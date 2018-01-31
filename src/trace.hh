@@ -12,6 +12,12 @@
 namespace oldspot
 {
 
+/**
+ * Data point in an activity trace for a unit.  It contains a time at which it
+ * occurs, the duration of the segment, and a map of quantities onto their values
+ * for that segment (i.e. temperature, voltage, frequency, etc., depending on
+ * which quantities are needed to compute reliability).
+ */
 struct DataPoint
 {
     double time;

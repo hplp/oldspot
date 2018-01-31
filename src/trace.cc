@@ -21,6 +21,9 @@ namespace oldspot
 
 using namespace std;
 
+/**
+ * Push a string representation of a DataPoint onto a stream.
+ */
 ostream& operator<<(ostream& stream, const DataPoint& point)
 {
     stream << point.time << ":{";
@@ -30,6 +33,12 @@ ostream& operator<<(ostream& stream, const DataPoint& point)
     return stream << "}";
 }
 
+/**
+ * Parse a trace file to get a list of DataPoints.  Each trace file should be a table
+ * delimited with the given delimiter (default is comma) where each row is a point in
+ * the trace and each column is a quantity in the trace, with the first row containing
+ * headers.  The first column must be the time at which the data point occurs.
+ */
 vector<DataPoint> parseTrace(const string fname, char delimiter)
 {
     ifstream file(fname);

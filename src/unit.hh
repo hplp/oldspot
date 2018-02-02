@@ -121,12 +121,13 @@ class Unit : public Component
 {
   public:
     typedef std::unordered_set<std::string> config_t;
+    typedef enum { HEALTHY, ASLEEP, FAILED } state_t;
 
   private:
     double age;
     int copies;
     double _current_reliability;
-    bool _failed;
+    state_t _state;
     int remaining;
     bool serial;
     config_t config;
@@ -168,7 +169,7 @@ class Unit : public Component
     double inverse(double r) const { return inverse(config, r); }
 
     bool failed_in_trace(const config_t& c) const;
-    bool failed() const { return _failed; }
+    bool failed() const { return _state == FAILED; }
     void failure();
 
     virtual std::ostream& dump(std::ostream& stream) const override;

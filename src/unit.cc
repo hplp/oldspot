@@ -104,7 +104,7 @@ Unit::parents_failed(const shared_ptr<Component>& root, const vector<shared_ptr<
         return true;
     });
     for (shared_ptr<Unit>& unit: failed)
-        unit->_failed = true;
+        unit->_state = FAILED;
     return failed;
 }
 
@@ -122,7 +122,8 @@ Unit::parents_failed(const shared_ptr<Component>& root, const vector<shared_ptr<
  */
 Unit::Unit(const xml_node& node, unsigned int i, unordered_map<string, double> defaults)
     : Component(node.attribute("name").value()),
-      age(0), copies(1), _current_reliability(1), _failed(false), remaining(1), serial(true), config({}), prev_config({}), id(i)
+      age(0), copies(1), _current_reliability(1), _state(HEALTHY), remaining(1), serial(true),
+      config({}), prev_config({}), id(i)
 {
     if (defaults.count("vdd") == 0)
         defaults["vdd"] = 1;
@@ -185,7 +186,7 @@ Unit::reset()
 {
     age = 0;
     _current_reliability = 1;
-    _failed = false;
+    _state = HEALTHY;
     remaining = copies;
 }
 
@@ -196,7 +197,7 @@ Unit::reset()
 void
 Unit::set_configuration(const shared_ptr<Component>& root)
 {
-    if (_failed)
+    if (failed())
         cerr << "warning: setting configuration for failed unit " << name << endl;
     if (root->failed())
         cerr << "warning: setting configuration for failed system" << endl;
@@ -348,7 +349,7 @@ Unit::failed_in_trace(const config_t& c) const
 void
 Unit::failure()
 {
-    _failed = --remaining == 0;
+    _state = --remaining == 0 ? FAILED : HEALTHY;
     if (serial)
     {
         _current_reliability = 1;

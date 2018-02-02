@@ -14,6 +14,7 @@
 #include <pugixml.hpp>
 #include <random>
 #include <set>
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -159,6 +160,33 @@ Unit::Unit(const xml_node& node, unsigned int i, unordered_map<string, double> d
                     if (data.data.count(def.first) == 0)
                         data.data[def.first] = def.second;
             traces[failed] = trace;
+
+            power_gating[failed] = {numeric_limits<double>::infinity(), 1};
+            if (child.attribute("power_gate"))
+            {
+                vector<string> pg_vector = split(child.attribute("power_gate").value(), ',');
+                if (pg_vector.size() != 2)
+                    cerr << "warning: can't parse power gating signal for configuration " << failed << ": "
+                         << child.attribute("power_gate").value() << endl;
+                else
+                {
+                    double freq = stof(pg_vector[0]);
+                    double duty = stof(pg_vector[1]);
+                    if (duty < 0)
+                    {
+                        cerr << "warning: invalid duty cycle " << duty << " for configuration " << failed << endl;
+                        duty = 0;
+                    }
+                    if (duty > 1)
+                    {
+                        cerr << "warning: invalid duty cycle " << duty << " for configuration " << failed << endl;
+                        duty = 1;
+                    }
+                    if (freq <= 0)
+                        freq = numeric_limits<double>::infinity();
+                    power_gating[failed] = {freq, duty};
+                }
+            }
         }
     }
     if (traces.count(fresh) == 0)

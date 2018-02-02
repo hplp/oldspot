@@ -135,6 +135,7 @@ class Unit : public Component
 
   protected:
     std::unordered_map<config_t, std::vector<DataPoint>> traces;
+    std::unordered_map<config_t, std::pair<double, double>> power_gating; // Period (s), duty cycle
     std::unordered_map<config_t, std::unordered_map<std::shared_ptr<FailureMechanism>, WeibullDistribution>> reliabilities;
     std::unordered_map<config_t, WeibullDistribution> overall_reliabilities;
 

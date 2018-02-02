@@ -124,7 +124,7 @@ Unit::parents_failed(const shared_ptr<Component>& root, const vector<shared_ptr<
 Unit::Unit(const xml_node& node, unsigned int i, unordered_map<string, double> defaults)
     : Component(node.attribute("name").value()),
       age(0), copies(1), _current_reliability(1), _state(HEALTHY), remaining(1), serial(true),
-      config({}), prev_config({}), id(i)
+      config({}), prev_config({}), updowntime(0), id(i)
 {
     if (defaults.count("vdd") == 0)
         defaults["vdd"] = 1;
@@ -161,7 +161,7 @@ Unit::Unit(const xml_node& node, unsigned int i, unordered_map<string, double> d
                         data.data[def.first] = def.second;
             traces[failed] = trace;
 
-            power_gating[failed] = {numeric_limits<double>::infinity(), 1};
+            power_gating[failed] = {numeric_limits<double>::infinity(), 0};
             if (child.attribute("power_gate"))
             {
                 vector<string> pg_vector = split(child.attribute("power_gate").value(), ',');
@@ -170,7 +170,7 @@ Unit::Unit(const xml_node& node, unsigned int i, unordered_map<string, double> d
                          << child.attribute("power_gate").value() << endl;
                 else
                 {
-                    double freq = stof(pg_vector[0]);
+                    double period = stof(pg_vector[0]);
                     double duty = stof(pg_vector[1]);
                     if (duty < 0)
                     {
@@ -182,9 +182,10 @@ Unit::Unit(const xml_node& node, unsigned int i, unordered_map<string, double> d
                         cerr << "warning: invalid duty cycle " << duty << " for configuration " << failed << endl;
                         duty = 1;
                     }
-                    if (freq <= 0)
-                        freq = numeric_limits<double>::infinity();
-                    power_gating[failed] = {freq, duty};
+                    // Either a period of infinity or duty cycle of 1 indicates no power gating
+                    // NB: 0 period or duty cycle are valid values
+                    if (duty < 1 && !isinf(period))
+                        power_gating[failed] = {period*duty, period*(1 - duty)};
                 }
             }
         }
@@ -249,22 +250,34 @@ Unit::set_configuration(const shared_ptr<Component>& root)
         config = fresh;
         cerr << "         using configuration " << config << endl;
     }
+    else if (power_gating[config].first == 0)
+        _state = ASLEEP;
+    else if (isinf(power_gating[config].first))
+        _state = HEALTHY;
 }
 
 /**
  * Determine the next event this Enit experiences relative to the time of the previous
  * event.  Currently this only means the time at which this Unit will fail.
  */
-double
+pair<double, Unit::state_t>
 Unit::get_next_event() const
 {
+    if (_state == ASLEEP)
+        return {power_gating.at(config).second - updowntime, HEALTHY};
+
     static random_device dev;
     static mt19937 gen(dev());
     uniform_real_distribution<double> r(0, _current_reliability);
     double next = inverse(r(gen));
     if (isinf(next))
-        return numeric_limits<double>::infinity();
-    return next - inverse(_current_reliability);
+        next = numeric_limits<double>::infinity();
+    else
+        next -= inverse(_current_reliability);
+    if (next < power_gating.at(config).first - updowntime)
+        return {next, FAILED};
+    else
+        return {power_gating.at(config).first - updowntime, ASLEEP};
 }
 
 /**

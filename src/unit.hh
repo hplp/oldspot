@@ -132,10 +132,11 @@ class Unit : public Component
     bool serial;
     config_t config;
     config_t prev_config;
+    double updowntime;
 
   protected:
     std::unordered_map<config_t, std::vector<DataPoint>> traces;
-    std::unordered_map<config_t, std::pair<double, double>> power_gating; // Period (s), duty cycle
+    std::unordered_map<config_t, std::pair<double, double>> power_gating; // uptime, downtime
     std::unordered_map<config_t, std::unordered_map<std::shared_ptr<FailureMechanism>, WeibullDistribution>> reliabilities;
     std::unordered_map<config_t, WeibullDistribution> overall_reliabilities;
 
@@ -152,7 +153,7 @@ class Unit : public Component
     void reset();
     void set_configuration(const std::shared_ptr<Component>& root);
 
-    double get_next_event() const;
+    std::pair<double, state_t> get_next_event() const;
     void update_reliability(double dt);
     double current_reliability() const { return _current_reliability; }
 

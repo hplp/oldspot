@@ -16,6 +16,7 @@
 #include <set>
 #include <string>
 #include <tclap/CmdLine.h>
+#include <tuple>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -193,7 +194,9 @@ main(int argc, char* argv[])
             shared_ptr<Unit> failed;
             for (const shared_ptr<Unit>& unit: healthy)
             {
-                double dt = unit->get_next_event();
+                double dt;
+                Unit::state_t next_state;
+                tie(dt, next_state) = unit->get_next_event();
                 if (dt_event > dt)
                 {
                     failed = unit;

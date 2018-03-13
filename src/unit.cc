@@ -113,7 +113,7 @@ Unit::parents_failed(const shared_ptr<Component>& root, const vector<shared_ptr<
  * pugixml node using the given set of default values if they are missing.  Each
  * node should consist of a set of trace files that contains one trace for each
  * possible configuration in which this Unit is not failed and, optionally,
- * a redundancy specification that specifies how many redudnant copies of this Unit
+ * a redundancy specification that specifies how many redundant copies of this Unit
  * there are and whether they are parallel or serial (i.e. if they are shadow copies
  * or take over when older ones fail).  Configurations are specified as sets of
  * names of units that have failed.
@@ -122,8 +122,10 @@ Unit::parents_failed(const shared_ptr<Component>& root, const vector<shared_ptr<
  */
 Unit::Unit(const xml_node& node, unsigned int i, unordered_map<string, double> defaults)
     : Component(node.attribute("name").value()),
-      age(0), copies(1), _current_reliability(1), _failed(false), remaining(1), serial(true), config({}), prev_config({}), id(i)
+      _area(1e-12), age(0), copies(1), _current_reliability(1), _failed(false), remaining(1), serial(true), config({}), prev_config({}), id(i)
 {
+    _area = node.attribute("area").as_double(1e-12);
+
     if (defaults.count("vdd") == 0)
         defaults["vdd"] = 1;
     if (defaults.count("temperature") == 0)

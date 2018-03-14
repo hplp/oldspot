@@ -169,7 +169,7 @@ Unit::Unit(const xml_node& node, unsigned int i, unordered_map<string, double> d
         for (DataPoint& data: trace.second)
         {
             data.data["frequency"] *= 1e6; // Expecting MHz; convert to Hz
-            data.data["area"] = area;
+            data.data["area"] = _area;
         }
     }
 }

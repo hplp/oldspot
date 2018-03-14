@@ -162,10 +162,11 @@ NBTI::timeToFailure(const DataPoint& data, double duty_cycle, double fail) const
 EM::EM(const string& tech_file, const string& em_file) : FailureMechanism("EM", tech_file)
 {
     p["n"] = 2;
-    p["Ea"] = 0.8;      // eV
-    p["w"] = 4.5e-7;    // m
-    p["h"] = 1.2e-6;    // m
-    p["A"] = 3.22e21;   // extracted from [?]
+    p["Ea"] = 0.8;          // eV
+    p["w"] = 4.5e-7;        // m
+    p["h"] = 1.2e-6;        // m
+    p["A"] = 3.22e21;       // extracted from [?]
+    p["wire_density"] = 1;  // wires/m^2
     if (!em_file.empty())
     {
         Parameters params = read_params(em_file);
@@ -181,6 +182,7 @@ EM::EM(const string& tech_file, const string& em_file) : FailureMechanism("EM", 
 double
 EM::timeToFailure(const DataPoint& data, double, double) const
 {
+    // TODO: current density/wire = P  / area / wire density/area / VDD
     return p.at("A")*pow(data.data.at("power")/data.data.at("vdd")/(p.at("w")*p.at("h")), -p.at("n"))
                     *exp(p.at("Ea")/(k_B*data.data.at("temperature")));
 }

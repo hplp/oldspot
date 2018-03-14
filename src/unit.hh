@@ -124,6 +124,7 @@ class Unit : public Component
     typedef enum { HEALTHY, ASLEEP, FAILED } state_t;
 
   private:
+    double _area;
     double age;
     int copies;
     double _current_reliability;
@@ -146,6 +147,7 @@ class Unit : public Component
 
     static std::vector<std::shared_ptr<Unit>> parents_failed(const std::shared_ptr<Component>& root, const std::vector<std::shared_ptr<Unit>>& units);
 
+    double area() const { return _area; }
     const unsigned int id;
 
     Unit(const pugi::xml_node& node, unsigned int i, std::unordered_map<std::string, double> defaults={});

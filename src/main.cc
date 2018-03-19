@@ -42,6 +42,7 @@ struct OutputData
     {}
 
     double operator()(const shared_ptr<Component>& c) { return funct(c); }
+    double operator()(const shared_ptr<Component>& a, const shared_ptr<Component>& b) { return funct(b) < funct(a); }
 };
 
 inline bool
@@ -91,7 +92,8 @@ main(int argc, char* argv[])
     CmdLine cmd("Compute the reliability distribution of a chip", ' ', "0.1");
     SwitchArg verbose("v", "verbose", "Display progress output", cmd);
     SwitchArg separate("", "separate-aging-rates", "Display a second table with aging rates separated by mechanism per unit (only works for fresh configuration)", cmd);
-    ValueArg<string> values("", "print-values", "Values to display in output table (default: MTTF,Failures", false, "mttf,failures", "values", cmd);
+    ValueArg<string> values("", "print-values", "Values to display in output table (default: MTTF,Failures)", false, "mttf,failures", "values", cmd);
+    ValueArg<string> sortkey("", "sort-values", "Value to sort by in output table in descending order (default: Failures)", false, "failures", "value", cmd);
     ValueArg<string> tddb("", "tddb-parameters", "File containing model parameters for TDDB", false, "", "filename", cmd);
     ValueArg<string> hci("", "hci-parameters", "File containing model parameters for HCI", false, "", "filename", cmd);
     ValueArg<string> em("", "em-parameters", "File containing model parameters for electromigration", false, "", "filename", cmd);
@@ -223,26 +225,31 @@ main(int argc, char* argv[])
         }
     }
 
+    transform(values.getValue().begin(), values.getValue().end(), values.getValue().begin(), ::tolower);
+    transform(sortkey.getValue().begin(), sortkey.getValue().end(), sortkey.getValue().begin(), ::tolower);
     unordered_map<string, OutputData> outputs = {
         {"mttf", {"MTTF", [&](const shared_ptr<Component>& c){ return convert_time(c->mttf(), time.getValue()); }}},
         {"failures", {"Failures", [](const shared_ptr<Component>& c){ return c->ttfs.size(); }}},
         {"alpha", {"Alpha", [&](const shared_ptr<Component>& c){ return convert_time(c->aging_rate(), time.getValue()); }}}
     };
+    vector<shared_ptr<Component>> components;
+    Component::walk(root, [&](const shared_ptr<Component>& c){
+        if (find(components.begin(), components.end(), c) == components.end())
+            components.push_back(c);
+    });
+    components.erase(components.begin());
+    sort(components.begin(), components.end(), outputs[sortkey.getValue()]);
     vector<string> tokens = split(values.getValue(), ',');
     vector<string> rows{root->name};
     vector<string> cols;
-    transform(values.getValue().begin(), values.getValue().end(), values.getValue().begin(), ::tolower);
     transform(tokens.begin(), tokens.end(), back_inserter(cols), [&](const string& token){ return outputs[token].name; });
-    transform(units.begin(), units.end(), back_inserter(rows), [](const shared_ptr<Unit>& u){ return u->name; });
+    transform(components.begin(), components.end(), back_inserter(rows), [](const shared_ptr<Component>& c){ return c->name; });
     unordered_map<string, unordered_map<string, double>> data;
-    sort(units.begin(), units.end(), [](const shared_ptr<Unit>& a, const shared_ptr<Unit>& b) {
-        return b->ttfs.size() < a->ttfs.size();
-    });
     for (const string& token: tokens)
     {
         data[root->name][outputs[token].name] = outputs[token](root);
-        for (const shared_ptr<Unit>& u: units)
-            data[u->name][outputs[token].name] = outputs[token](u);
+        for (const shared_ptr<Component>& c: components)
+            data[c->name][outputs[token].name] = outputs[token](c);
     }
     print_table(rows, cols, data);
 

@@ -26,7 +26,7 @@ std::vector<std::string> split(const std::string& str, char delimiter);
  */
 template<typename T> void
 print_table(const std::vector<std::string>& rows, const std::vector<std::string>& cols,
-                 const std::unordered_map<std::string, std::unordered_map<std::string, T>>& data)
+            const std::unordered_map<std::string, std::unordered_map<std::string, T>>& data)
 {
     using namespace std;
 

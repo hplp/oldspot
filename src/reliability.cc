@@ -25,9 +25,9 @@ WeibullDistribution::estimate(const std::vector<double>& ttfs, double beta)
 {
     WeibullDistribution dist;
     dist.beta = beta;
-    dist.alpha = accumulate(ttfs.begin(), ttfs.end(), 0.0, [&](double a, double b){
+    dist.alpha = pow(accumulate(ttfs.begin(), ttfs.end(), 0.0, [&](double a, double b){
         return a + b*b;
-    })/ttfs.size();
+    })/ttfs.size(), 1/beta);
     return dist;
 }
 

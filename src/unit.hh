@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <limits>
 #include <memory>
+#include <numeric>
 #include <ostream>
 #include <pugixml.hpp>
 #include <set>
@@ -31,10 +32,8 @@ class hash<unordered_set<string>>
     size_t
     operator()(const unordered_set<string>& strs) const
     {
-        size_t result = 58271;
-        for (const string& s: strs)
-            result ^= strs.hash_function()(s);
-        return result;
+        auto hasher = strs.hash_function();
+        return std::accumulate(strs.begin(), strs.end(), 58271, [&](size_t h, const string& s){ return h^hasher(s); });
     }
 };
 

@@ -232,24 +232,18 @@ main(int argc, char* argv[])
         {"failures", {"Failures", [](const shared_ptr<Component>& c){ return c->ttfs.size(); }}},
         {"alpha", {"Alpha", [&](const shared_ptr<Component>& c){ return convert_time(c->aging_rate(), time.getValue()); }}}
     };
-    vector<shared_ptr<Component>> components;
-    Component::walk(root, [&](const shared_ptr<Component>& c){
-        if (find(components.begin(), components.end(), c) == components.end())
-            components.push_back(c);
-    });
-    components.erase(components.begin());
-    sort(components.begin(), components.end(), outputs[sortkey.getValue()]);
+    sort(units.begin(), units.end(), outputs[sortkey.getValue()]);
     vector<string> tokens = split(values.getValue(), ',');
     vector<string> rows{root->name};
     vector<string> cols;
     transform(tokens.begin(), tokens.end(), back_inserter(cols), [&](const string& token){ return outputs[token].name; });
-    transform(components.begin(), components.end(), back_inserter(rows), [](const shared_ptr<Component>& c){ return c->name; });
+    transform(units.begin(), units.end(), back_inserter(rows), [](const shared_ptr<Unit>& u){ return u->name; });
     unordered_map<string, unordered_map<string, double>> data;
     for (const string& token: tokens)
     {
         data[root->name][outputs[token].name] = outputs[token](root);
-        for (const shared_ptr<Component>& c: components)
-            data[c->name][outputs[token].name] = outputs[token](c);
+        for (const shared_ptr<Unit>& u: units)
+            data[u->name][outputs[token].name] = outputs[token](u);
     }
     print_table(rows, cols, data);
 

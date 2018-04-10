@@ -146,7 +146,7 @@ class Unit : public Component
     double area() const { return _area; }
     const unsigned int id;
 
-    Unit(const pugi::xml_node& node, unsigned int i, std::unordered_map<std::string, double> defaults={});
+    Unit(const pugi::xml_node& node, unsigned int i, const std::unordered_map<std::string, double>& defaults={});
     std::vector<std::shared_ptr<Component>>& children() override;
     void reset();
     void set_configuration(const std::shared_ptr<Component>& root);

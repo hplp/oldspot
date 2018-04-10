@@ -120,25 +120,26 @@ Unit::parents_failed(const shared_ptr<Component>& root, const vector<shared_ptr<
  * 
  * The ID of each unit should be unique.
  */
-Unit::Unit(const xml_node& node, unsigned int i, unordered_map<string, double> defaults)
+Unit::Unit(const xml_node& node, unsigned int i, const unordered_map<string, double>& defaults)
     : Component(node.attribute("name").value()),
       _area(1e-12), age(0), copies(1), _current_reliability(1), _failed(false), remaining(1), serial(true), config({}), prev_config({}), id(i)
 {
+    unordered_map<string, double> def(defaults.begin(), defaults.end());
+
     _area = node.attribute("area").as_double(1e-12);
 
-    if (defaults.count("vdd") == 0)
-        defaults["vdd"] = 1;
-    if (defaults.count("temperature") == 0)
-        defaults["temperature"] = 350;
-    if (defaults.count("frequency") == 0)
-        defaults["frequency"] = 1000;
-    if (defaults.count("activity") == 0)
-        defaults["activity"] = 0;
+    if (def.count("vdd") == 0)
+        def["vdd"] = 1;
+    if (def.count("temperature") == 0)
+        def["temperature"] = 350;
+    if (def.count("frequency") == 0)
+        def["frequency"] = 1000;
+    if (def.count("activity") == 0)
+        def["activity"] = 0;
 
-    for (const xml_node& def: node.children("default"))
-        for (auto& value: defaults)
-            if (def.attribute(value.first.c_str()))
-                value.second = def.attribute(value.first.c_str()).as_double();
+    for (const xml_node& d: node.children("default"))
+        for (const xml_attribute& a: d.attributes())
+            def[a.name()] = a.as_double();
 
     if (node.child("redundancy"))
     {
@@ -155,15 +156,15 @@ Unit::Unit(const xml_node& node, unsigned int i, unordered_map<string, double> d
             vector<string> failed_vector = split(child.attribute("failed").value(), ',');
             config_t failed(failed_vector.begin(), failed_vector.end());
 
-            for (const auto& def: defaults)
+            for (const auto& d: def)
                 for (DataPoint& data: trace)
-                    if (data.data.count(def.first) == 0)
-                        data.data[def.first] = def.second;
+                    if (data.data.count(d.first) == 0)
+                        data.data[d.first] = d.second;
             traces[failed] = trace;
         }
     }
     if (traces.count(fresh) == 0)
-        traces[fresh] = {{1, 1, defaults}};
+        traces[fresh] = {{1, 1, def}};
     for (auto& trace: traces)
     {
         for (DataPoint& data: trace.second)

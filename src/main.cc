@@ -204,7 +204,10 @@ main(int argc, char* argv[])
             }
             
             if (isinf(dt_event))
-                break;
+            {
+                warn("no unit failure during iteration %d\n", i);
+                continue;
+            }
 
             for (const shared_ptr<Unit>& unit: healthy)
                 unit->update_reliability(dt_event);

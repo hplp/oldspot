@@ -206,7 +206,7 @@ main(int argc, char* argv[])
             if (isinf(dt_event))
             {
                 warn("no unit failure during iteration %d\n", i);
-                continue;
+                break;
             }
 
             for (const shared_ptr<Unit>& unit: healthy)

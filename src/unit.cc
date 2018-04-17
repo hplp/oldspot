@@ -14,6 +14,7 @@
 #include <pugixml.hpp>
 #include <random>
 #include <set>
+#include <sstream>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -205,9 +206,9 @@ void
 Unit::set_configuration(const shared_ptr<Component>& root)
 {
     if (_failed)
-        cerr << "warning: setting configuration for failed unit " << name << endl;
+        warn("setting configuration for failed unit %s\n", name.c_str());
     if (root->failed())
-        cerr << "warning: setting configuration for failed system" << endl;
+        warn("setting configuration for failed system\n");
 
     prev_config = config;
     config.clear();
@@ -224,14 +225,16 @@ Unit::set_configuration(const shared_ptr<Component>& root)
 
     if (traces.count(config) == 0)
     {
-        cerr << "warning: can't find configuration " << config << " for " + name << endl;
+        stringstream c, f;
+        c << config;
+        f << fresh;
+        warn("can't find configuration %s for %s; using configuration %s\n", c.str().c_str(), name.c_str(), f.str().c_str());
         config = fresh;
-        cerr << "         using configuration " << config << endl;
     }
 }
 
 /**
- * Determine the next event this Enit experiences relative to the time of the previous
+ * Determine the next event this Unit experiences relative to the time of the previous
  * event.  Currently this only means the time at which this Unit will fail.
  */
 double

@@ -57,14 +57,14 @@ FailureMechanism::read_params(const string& file)
             {
                 vector<string> tokens = split(line, '\t');
                 if (tokens.size() != 2)
-                    cerr << "warning: " << file << ": " << line << ": unable to parse line" << endl;
+                    warn("%s: %d: unable to parse line\n", file.c_str(), line);
                 else
                     params[tokens[0]] = stod(tokens[1]);
             }
         }
     }
     else
-        cerr << "warning: " << file << ": file not found" << endl;
+        warn("%s: file not found\n", file.c_str());
     return params;
 }
 
@@ -106,8 +106,7 @@ NBTI::degradation(double t, double vdd, double dVth, double temperature, double 
     double V = vdd - p.at("Vt0_p") - dVth;
     if (V < 0)
     {
-        cerr << "warning: subthreshold VDD " << vdd << " not supported" << endl;
-        cerr << "         operating at threshold instead" << endl;
+        warn("subthreshold VDD %f not supported; operating at threshold instead\n", vdd);
         V = 0;
     }
     double E_AIT = 2.0/3.0*(p.at("E_Akf") - p.at("E_Akr")) + p.at("E_ADH2")/6;

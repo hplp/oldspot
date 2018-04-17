@@ -20,6 +20,8 @@ linterp(const T& x, const std::pair<T, T>& s, const std::pair<T, T>& f)
 
 std::vector<std::string> split(const std::string& str, char delimiter);
 
+int warn(const char* format, ...);
+
 /**
  * Print a nicely-formatted table with row and column headers where the data is
  * defined using nested maps organized as {row label: {column label: data}}.

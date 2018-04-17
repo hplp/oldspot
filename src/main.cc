@@ -120,7 +120,7 @@ main(int argc, char* argv[])
     if (!result)
     {
         cerr << config.getValue() << ": " << result.description()
-                << " at offset " << result.offset << endl;
+             << " at offset " << result.offset << endl;
         return 1;
     }
 
@@ -138,7 +138,7 @@ main(int argc, char* argv[])
         if (token == "tddb" || token == "all")
             mechanisms.insert(make_shared<TDDB>(technology.getValue(), tddb.getValue()));
         if (token != "all" && token != "nbti" && token != "em" && token != "hci" && token != "tddb")
-            cerr << "warning: ignoring unknown aging mechanism \"" << token << '"' << endl;
+            warn("ignoring unknown aging mechanism \"%s\"\n", token.c_str());
     }
     if (mechanisms.empty())
     {
@@ -161,7 +161,7 @@ main(int argc, char* argv[])
             units.push_back(make_shared<Memory>(child, units.size()));
         else
         {
-            cerr << "unknown unit type \"" << child.name() << '"' << endl;
+            warn("unknown unit type \"%s\"\n", child.name());
             exit(1);
         }
     }

@@ -55,6 +55,19 @@ Component::mttf() const
         return accumulate(ttfs.begin(), ttfs.end(), 0.0)/ttfs.size();
 }
 
+double
+Component::stdttf() const
+{
+    if (ttfs.size() <= 1)
+        return numeric_limits<double>::quiet_NaN();
+    else
+    {
+        double mean = mttf();
+        return sqrt(accumulate(ttfs.begin(), ttfs.end(), 0.0,
+                               [&](double a, double b){ return a + pow(b - mean, 2); })/(ttfs.size() - 1));
+    }
+}
+
 /**
  * Get the confidence interval on the MTTF of this Component.  Until a good implementation
  * of Student's t distribution can be found, the confidence parameter is reserved and

@@ -101,6 +101,7 @@ class Component
     Component(const std::string _n) : name(_n) {}
     virtual std::vector<std::shared_ptr<Component>>& children() = 0;
     virtual double mttf() const;
+    virtual double stdttf() const;
     virtual std::pair<double, double> mttf_interval(double confidence=0.95) const;
     virtual double aging_rate() const { return std::numeric_limits<double>::quiet_NaN(); }
     virtual bool failed() const = 0;

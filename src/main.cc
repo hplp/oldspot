@@ -211,6 +211,11 @@ main(int argc, char* argv[])
                 failed_components.insert(unit);
         }
     }
+    cout << "Lifetime statistics for " << root->name << endl;
+    cout << "Mean: " << convert_time(root->mttf(), time.getValue()) << endl;
+    cout << "Standard deviation: " << convert_time(root->stdttf(), time.getValue()) << endl;
+    pair<double, double> interval = root->mttf_interval(0.95);
+    cout << "95%% confidence interval: [" << convert_time(interval.first, time.getValue()) << ", " << convert_time(interval.second, time.getValue()) << ']' << endl;
 
     if (!rates.getValue().empty())
     {
@@ -235,13 +240,13 @@ main(int argc, char* argv[])
         {
             dist << root->name;
             for (double ttf: root->ttfs)
-                dist << ',' << ttf;
+                dist << ',' << convert_time(ttf, time.getValue());
             dist << endl;
             for (const shared_ptr<Unit>& unit: units)
             {
                 dist << unit->name;
                 for (double ttf: unit->ttfs)
-                    dist << ',' << ttf;
+                    dist << ',' << convert_time(ttf, time.getValue());
                 dist << endl;
             }
         }

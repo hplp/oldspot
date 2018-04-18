@@ -1,10 +1,14 @@
 #include <algorithm>
+#include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <memory>
 #include <string>
 #include <unordered_map>
 #include <utility>
 #include <vector>
+
+#include "unit.hh"
 
 namespace oldspot
 {
@@ -22,41 +26,27 @@ std::vector<std::string> split(const std::string& str, char delimiter);
 
 int warn(const char* format, ...);
 
-/**
- * Print a nicely-formatted table with row and column headers where the data is
- * defined using nested maps organized as {row label: {column label: data}}.
- */
-template<typename T> void
-print_table(const std::vector<std::string>& rows, const std::vector<std::string>& cols,
-            const std::unordered_map<std::string, std::unordered_map<std::string, T>>& data)
+template<typename Rows> void
+writecsv(const std::string& filename, const std::vector<std::shared_ptr<Unit>>& units, Rows&& rows)
 {
     using namespace std;
 
-    unordered_map<string, size_t> col_widths;
-    size_t first_col_width = 0;
-    for (const string& header: cols)
-        col_widths[header] = header.length();
-    for (const string& header: rows)
-        first_col_width = max(first_col_width, header.length());
-    for (size_t i = 0; i < rows.size(); i++)
-        for (size_t j = 0; j < cols.size(); j++)
-            col_widths[cols[j]] = max(col_widths[cols[j]], to_string(data.at(rows[i]).at(cols[j])).length());
-
-    // Print column headers
-    for (size_t k = 0; k < first_col_width; k++)
-        cout << ' ';
-    cout << " | ";
-    for (size_t j = 0; j < cols.size(); j++)
-        cout << left << setw(col_widths[cols[j]]) << cols[j] << " | ";
-    cout << endl;
-    // Print row data
-    for (size_t i = 0; i < rows.size(); i++)
+    ofstream data(filename);
+    if (data)
     {
-        cout << left << setw(first_col_width) << rows[i] << " | ";
-        for (size_t j = 0; j < cols.size(); j++)
-            cout << right << setw(col_widths[cols[j]]) << to_string(data.at(rows[i]).at(cols[j])) << " | ";
-        cout << endl;
+        for (const auto& row: rows)
+            data << ',' << row.first;
+        data << endl;
+        for (const shared_ptr<Unit>& unit: units)
+        {
+            data << unit->name;
+            for (const auto& row: rows)
+                data << ',' << row.second(unit);
+            data << endl;
+        }
     }
+    else
+        cerr << "error: could not write to " << filename << endl;
 }
 
 } // namespace oldspot

@@ -30,21 +30,6 @@ using namespace oldspot;
 using namespace pugi;
 using namespace std;
 
-struct OutputData
-{
-    const string name;
-    const function<double(const shared_ptr<Component>&)> funct;
-
-    OutputData(const string& n, function<double(const shared_ptr<Component>&)> f)
-               : name(n), funct(f)
-    {}
-    OutputData() : OutputData("<unknown data>", [](const shared_ptr<Component>& c){ return numeric_limits<double>::quiet_NaN(); })
-    {}
-
-    double operator()(const shared_ptr<Component>& c) { return funct(c); }
-    double operator()(const shared_ptr<Component>& a, const shared_ptr<Component>& b) { return funct(b) < funct(a); }
-};
-
 inline bool
 node_is(const xml_node& node, const string& type)
 {
@@ -91,9 +76,6 @@ main(int argc, char* argv[])
 
     CmdLine cmd("Compute the reliability distribution of a chip", ' ', "0.1");
     SwitchArg verbose("v", "verbose", "Display progress output", cmd);
-    SwitchArg separate("", "separate-aging-rates", "Display a second table with aging rates separated by mechanism per unit (only works for fresh configuration)", cmd);
-    ValueArg<string> values("", "print-values", "Values to display in output table (default: MTTF,Failures)", false, "mttf,failures", "values", cmd);
-    ValueArg<string> sortkey("", "sort-values", "Value to sort by in output table in descending order (default: Failures)", false, "failures", "value", cmd);
     ValueArg<string> tddb("", "tddb-parameters", "File containing model parameters for TDDB", false, "", "filename", cmd);
     ValueArg<string> hci("", "hci-parameters", "File containing model parameters for HCI", false, "", "filename", cmd);
     ValueArg<string> em("", "em-parameters", "File containing model parameters for electromigration", false, "", "filename", cmd);
@@ -102,8 +84,10 @@ main(int argc, char* argv[])
     ValueArg<string> phenomena("", "aging-mechanisms", "Comma-separated list of aging mechanisms to include or \"all\" for all of them", false, "all", "mechanisms", cmd);
     ValueArg<char> delimiter("", "trace-delimiter", "One-character delimiter for data in input trace files (default: ,)", false, ',', "delim", cmd);
     ValueArg<string> time("", "time-units", "Units for displaying time to failure (default: hours)", false, "hours", &time_constraint, cmd);
-    ValueArg<int> iterations("n", "iterations", "Number of Monte-Carlo iterations to perform (default: 1000)", false, 1000, "iterations", cmd);
+    ValueArg<string> separate("", "mechanism-aging-rates", "Write per-mechanism aging rates for each unit to file (only works for fresh configuration)", false, "", "filename", cmd);
     ValueArg<string> dist_dump("", "dump-ttfs", "Dump time-to-failure distribution to file", false, "", "filename", cmd);
+    ValueArg<string> rates("", "unit-aging-rates", "Write per-unit aging rates, MTTFs, and failure counts to file (aging rates only for fresh configuration)", false, "", "filename", cmd);
+    ValueArg<int> iterations("n", "iterations", "Number of Monte-Carlo iterations to perform (default: 1000)", false, 1000, "iterations", cmd);
     UnlabeledValueArg<string> config("chip-config", "File containing chip configuration", true, "", "filename", cmd);
 
     try
@@ -228,45 +212,22 @@ main(int argc, char* argv[])
         }
     }
 
-    transform(values.getValue().begin(), values.getValue().end(), values.getValue().begin(), ::tolower);
-    transform(sortkey.getValue().begin(), sortkey.getValue().end(), sortkey.getValue().begin(), ::tolower);
-    unordered_map<string, OutputData> outputs = {
-        {"mttf", {"MTTF", [&](const shared_ptr<Component>& c){ return convert_time(c->mttf(), time.getValue()); }}},
-        {"failures", {"Failures", [](const shared_ptr<Component>& c){ return c->ttfs.size(); }}},
-        {"alpha", {"Alpha", [&](const shared_ptr<Component>& c){ return convert_time(c->aging_rate(), time.getValue()); }}}
-    };
-    sort(units.begin(), units.end(), outputs[sortkey.getValue()]);
-    vector<string> tokens = split(values.getValue(), ',');
-    vector<string> rows{root->name};
-    vector<string> cols;
-    transform(tokens.begin(), tokens.end(), back_inserter(cols), [&](const string& token){ return outputs[token].name; });
-    transform(units.begin(), units.end(), back_inserter(rows), [](const shared_ptr<Unit>& u){ return u->name; });
-    unordered_map<string, unordered_map<string, double>> data;
-    for (const string& token: tokens)
+    if (!rates.getValue().empty())
     {
-        data[root->name][outputs[token].name] = outputs[token](root);
-        for (const shared_ptr<Unit>& u: units)
-            data[u->name][outputs[token].name] = outputs[token](u);
+        unordered_map<string, function<double(const shared_ptr<Unit>&)>> outputs = {
+            {"mttf", [&](const shared_ptr<Unit>& u){ return convert_time(u->mttf(), time.getValue()); }},
+            {"failures", [](const shared_ptr<Unit>& u){ return u->ttfs.size(); }},
+            {"alpha", [&](const shared_ptr<Unit>& u){ return convert_time(u->aging_rate(), time.getValue()); }}
+        };
+        writecsv(rates.getValue(), units, outputs);
     }
-    print_table(rows, cols, data);
-
-    if (separate.getValue())
+    if (!separate.getValue().empty())
     {
-        vector<string> rows;
-        vector<string> cols;
-        transform(units.begin(), units.end(), back_inserter(rows), [](const shared_ptr<Unit>& u){ return u->name; });
-        transform(mechanisms.begin(), mechanisms.end(), back_inserter(cols), [](const shared_ptr<FailureMechanism>& m){ return m->name; });
-        data.clear();
-        sort(units.begin(), units.end(), [&](const shared_ptr<Unit>& a, const shared_ptr<Unit>& b) {
-            return b->aging_rate(Unit::fresh) < a->aging_rate(Unit::fresh);
-        });
-        for (const shared_ptr<Unit>& u: units)
-            for (const shared_ptr<FailureMechanism>& m: mechanisms)
-                data[u->name][m->name] = convert_time(u->aging_rate(m), time.getValue());
-        cout << endl;
-        print_table(rows, cols, data);
+        unordered_map<string, function<double(const shared_ptr<Unit>&)>> outputs;
+        for (const shared_ptr<FailureMechanism>& mechanism: mechanisms)
+            outputs[mechanism->name] = [&](const shared_ptr<Unit>& u){ return convert_time(u->aging_rate(mechanism), time.getValue()); };
+        writecsv(separate.getValue(), units, outputs);
     }
-
     if (!dist_dump.getValue().empty())
     {
         ofstream dist(dist_dump.getValue());
@@ -284,6 +245,8 @@ main(int argc, char* argv[])
                 dist << endl;
             }
         }
+        else
+            cerr << "error: could not write to " << dist_dump.getValue() << endl;
     }
 
     return 0;

@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 
-<unit type="unit" name="core" area="2e-12">
+<unit type="unit" name="core">
     <default vdd="1.1" />
     <default temperature="350" />
     <default frequency="1000" />

@@ -136,11 +136,9 @@ Unit::parents_failed(const shared_ptr<Component>& root, const vector<shared_ptr<
  */
 Unit::Unit(const xml_node& node, unsigned int i, const unordered_map<string, double>& defaults)
     : Component(node.attribute("name").value()),
-      _area(1e-12), age(0), copies(1), _current_reliability(1), _failed(false), remaining(1), serial(true), config({}), prev_config({}), id(i)
+      age(0), copies(1), _current_reliability(1), _failed(false), remaining(1), serial(true), config({}), prev_config({}), id(i)
 {
     unordered_map<string, double> def(defaults.begin(), defaults.end());
-
-    _area = node.attribute("area").as_double(1e-12);
 
     if (def.count("vdd") == 0)
         def["vdd"] = 1;
@@ -180,13 +178,8 @@ Unit::Unit(const xml_node& node, unsigned int i, const unordered_map<string, dou
     if (traces.count(fresh) == 0)
         traces[fresh] = {{1, 1, def}};
     for (auto& trace: traces)
-    {
         for (DataPoint& data: trace.second)
-        {
             data.data["frequency"] *= 1e6; // Expecting MHz; convert to Hz
-            data.data["area"] = _area;
-        }
-    }
 }
 
 /**

@@ -176,14 +176,22 @@ EM::EM(const string& tech_file, const string& em_file) : FailureMechanism("EM", 
 /**
  * Compute mean-time-to-failure of EM using Black's Equation:
  * [5] Black, J. R.  Electromigration--a brief survey and some recent results.
- *     IEEE Transactions onElectron Devices, 16(4):338–347, 1969.
+ *     IEEE Transactions on Electron Devices, 16(4):338–347, 1969.
  */
 double
 EM::timeToFailure(const DataPoint& data, double, double) const
 {
-    // TODO: current density/wire = P  / area / wire density/area / VDD
-    return p.at("A")*pow(data.data.at("power")/data.data.at("vdd")/(p.at("w")*p.at("h")), -p.at("n"))
-                    *exp(p.at("Ea")/(k_B*data.data.at("temperature")));
+    double j = 0;
+    if (data.data.count("current_density") != 0)
+        j = data.data.at("current_density");
+    else if (data.data.count("current") != 0)
+        j = data.data.at("current")/(p.at("w")*p.at("h"));
+    else
+    {
+        warn("current density or current not found in trace data; approximating as P/V\n");
+        j = data.data.at("power")/data.data.at("vdd")/(p.at("w")*p.at("h"));
+    }
+    return p.at("A")*pow(j, -p.at("n"))*exp(p.at("Ea")/(k_B*data.data.at("temperature")));
 }
 
 /**

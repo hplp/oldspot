@@ -215,7 +215,7 @@ main(int argc, char* argv[])
     cout << "Mean: " << convert_time(root->mttf(), time.getValue()) << endl;
     cout << "Standard deviation: " << convert_time(root->stdttf(), time.getValue()) << endl;
     pair<double, double> interval = root->mttf_interval(0.95);
-    cout << "95%% confidence interval: [" << convert_time(interval.first, time.getValue()) << ", " << convert_time(interval.second, time.getValue()) << ']' << endl;
+    cout << "95\% confidence interval: [" << convert_time(interval.first, time.getValue()) << ", " << convert_time(interval.second, time.getValue()) << ']' << endl;
 
     if (!rates.getValue().empty())
     {

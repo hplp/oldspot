@@ -269,7 +269,7 @@ double
 TDDB::timeToFailure(const DataPoint& data, double, double) const
 {
     double T = data.data.at("temperature");
-    return pow(data.data.at("vdd"), p.at("a") - p.at("b")*T)*exp((p.at("X") + p.at("Y")/T + p.at("Z")*T)/(k_B*T));
+    return pow(data.data.at("vdd"), p.at("b")*T - p.at("a"))*exp((p.at("X") + p.at("Y")/T + p.at("Z")*T)/(k_B*T));
 }
 
 } // namespace oldspot

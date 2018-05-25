@@ -145,7 +145,8 @@ main(int argc, char* argv[])
             units.push_back(make_shared<Memory>(child, units.size()));
         else
         {
-            warn("unknown unit type \"%s\"\n", child.name());
+            cerr << "unknown unit type \"" << child.attribute("type").value()
+                 << "\" for unit " << child.attribute("name").value() << endl;
             exit(1);
         }
     }
